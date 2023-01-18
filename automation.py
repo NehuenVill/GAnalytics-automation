@@ -11,6 +11,15 @@ environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'Proyecto API-8b9749be5c38.json'
 
 client = BetaAnalyticsDataClient()
 
+metrics_list = ['activeUsers',
+                'adUnitExposure',
+                'addToCarts',
+                'advertiserAdClicks',
+                'advertiserAdCost',
+                'advertiserAdCostPerClick',
+                'advertiserAdCostPerConversion',
+                '']
+
 def test(request):
 
     response = client.run_report(request)
