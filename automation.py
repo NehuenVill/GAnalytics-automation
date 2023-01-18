@@ -1,4 +1,5 @@
 from os import environ
+import pandas as pd
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
 from google.analytics.data_v1beta.types import DateRange
 from google.analytics.data_v1beta.types import Dimension
@@ -109,17 +110,20 @@ def get_metrics_data(ml, p_id, start_date, end_date) -> dict:
 
         data[metric] = full_response['rows']['metric_values']['value']
 
+    
+    save_to_excel(data, start_date, end_date)
+
+
+def save_to_excel(metrics_data, start_date, end_date):
+
+    df = pd.DataFrame(metrics_data, columns=[metrics_data])
+
+    df.to_excel(f"Metricas_desde_{start_date}_a_{end_date}.xlsx", index=False, columns=metrics_data)
+
+
+def send_mail(excel_file, outlook_email, password, start_date, end_date):
 
     
-
-
-def save_to_excel(metrics_data):
-
-    pass
-
-def send_mail(excel_file):
-
-    pass
 
 def test(request):
 
