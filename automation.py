@@ -1,5 +1,12 @@
 from os import environ
+import ssl
 import pandas as pd
+import smtplib
+from os.path import basename
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.utils import COMMASPACE, formatdate
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
 from google.analytics.data_v1beta.types import DateRange
 from google.analytics.data_v1beta.types import Dimension
@@ -121,9 +128,34 @@ def save_to_excel(metrics_data, start_date, end_date):
     df.to_excel(f"Metricas_desde_{start_date}_a_{end_date}.xlsx", index=False, columns=metrics_data)
 
 
-def send_mail(excel_file, outlook_email, password, start_date, end_date):
-
+def send_mail(excel_file, email, password, start_date, end_date):
     
+    mail = MIMEMultipart()
+    mail['From'] = email
+    mail['To'] = email
+    mail['Subject'] = f"Reporte desde {start_date} a {end_date}"
+
+    with open(excel_file, "rb") as f:
+        part = MIMEApplication(
+            f.read(),
+            Name=basename(f)
+        )
+
+    part['Content-Disposition'] = 'attachment; filename="%s"' % basename(f)
+    mail.attach(part)
+
+    port = 465
+
+    context = ssl.create_default_context()
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
+        
+        server.login(email, password)
+        
+        server.sendmail(email, email, mail.as_string())
+
+
+
 
 def test(request):
 
