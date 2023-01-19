@@ -97,29 +97,33 @@ metrics_list = ['activeUsers',
                 'wauPerMau'
                 ]
 
-def get_metrics_data(ml, p_id, start_date, end_date) -> dict:
+def get_metrics_data(start_date, end_date, email, password) -> dict:
 
     """Function to get data from the GA API.
         
-        ml = metrics list."""
+    """
 
     data = {}
 
-    for metric in ml:
+    for metric in metrics_list:
+
+        print(f'\nGetting metric: {metric}')
 
         request = RunReportRequest(
-        property=f"properties/{p_id}",
+        property=f"properties/{property_id}",
         metrics=[Metric(name=metric)],
         date_ranges=[DateRange(start_date=start_date, end_date=end_date)]
         )
 
         full_response = client.run_report(request)
 
-        data[metric] = full_response['rows']['metric_values']['value']
+        data[metric] = full_response.rows[0].metric_values[0].value
 
-    
+        print(f'Extracted metric: {metric} ---- value = {data[metric]}')
+
     save_to_excel(data, start_date, end_date)
 
+    send_mail(email, password, start_date, end_date)
 
 def save_to_excel(metrics_data, start_date, end_date):
 
@@ -127,15 +131,14 @@ def save_to_excel(metrics_data, start_date, end_date):
 
     df.to_excel(f"Metricas_desde_{start_date}_a_{end_date}.xlsx", index=False, columns=metrics_data)
 
-
-def send_mail(excel_file, email, password, start_date, end_date):
+def send_mail(email, password, start_date, end_date):
     
     mail = MIMEMultipart()
     mail['From'] = email
     mail['To'] = email
     mail['Subject'] = f"Reporte desde {start_date} a {end_date}"
 
-    with open(excel_file, "rb") as f:
+    with open(f'Metricas_desde_{start_date}_a_{end_date}.xlsx', "rb") as f:
         part = MIMEApplication(
             f.read(),
             Name=basename(f)
@@ -156,17 +159,3 @@ def send_mail(excel_file, email, password, start_date, end_date):
 
 
 
-
-def test(request):
-
-    response = client.run_report(request)
-
-    return response
-
-request = RunReportRequest(
-    property=f"properties/{property_id}",
-    metrics=[Metric(name="activeUsers")],
-    date_ranges=[DateRange(start_date="today", end_date="today")]
-)
-
-print(test(request))
