@@ -1,8 +1,9 @@
 from os import environ, remove
 import ssl
+from tkinter.tix import Tree
 import pandas as pd
 import smtplib
-from datetime import date
+from datetime import date, datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from os.path import basename
 from email.mime.application import MIMEApplication
@@ -22,7 +23,8 @@ environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'Proyecto API-8b9749be5c38.json'
 
 client = BetaAnalyticsDataClient()
 
-metrics_list = ['activeUsers',
+metrics_list = ['Date',
+                'activeUsers',
                 'averageSessionDuration',
                 'bounceRate',
                 'crashFreeUsersRate',
@@ -80,48 +82,58 @@ def get_metrics_data(d_range, email, password) -> dict:
     end_date = date_range[0]
     start_date = date_range[1]
 
-    data = {}
+    today = date.today()
 
-    for metric in metrics_list:
+    data = [{}, {}, {}, {}, {}, {}, {}]
 
-        print('-'*100)
+    for i in range(7,0,-1):
 
-        print(f'\nGetting metric: {metric}')
+        data[i-1]['Date'] = (today - timedelta(days=i)).strftime('%m-%d-%Y')
 
-        try:
+        print(f"Getting info from date: {data[i-1]['Date']}")
 
-            request = RunReportRequest(
-                property=f"properties/{property_id}",
-                metrics=[Metric(name=metric)],
-                date_ranges=[DateRange(start_date=start_date, end_date=end_date)]
-            )
+        for metric in metrics_list:
 
-            full_response = client.run_report(request)
+            if metric == 'Date':
 
-        except InvalidArgument:
-        
+                continue
 
-            print(f'Could not get info from the metric: {metric}')
+            print('-'*100)
 
-            data[metric] = 'Not available'
+            print(f'\nGetting metric: {metric}')
 
-            continue
+            try:
 
-        
+                request = RunReportRequest(
+                    property=f"properties/{property_id}",
+                    metrics=[Metric(name=metric)],
+                    date_ranges=[DateRange(start_date=f'{i}daysAgo', end_date=f'{i-1}daysAgo')]
+                )
 
-        try:
+                full_response = client.run_report(request)
 
-            data[metric] = full_response.rows[0].metric_values[0].value
+            except InvalidArgument:
+            
 
-            print(f'Extracted metric: {metric} ---- value = {data[metric]}')
+                print(f'Could not get info from the metric: {metric}')
 
-        except IndexError:
+                data[i-1][metric] = 'Not available'
 
-            print(f'metric: {metric} not available.')
+                continue
 
-            data[metric] = 'Not available'
+            try:
 
-    save_to_excel(data, start_date, end_date)
+                data[i-1][metric] = full_response.rows[0].metric_values[0].value
+
+                print(f'Extracted metric: {metric} ---- value = {data[i-1][metric]}')
+
+            except IndexError:
+
+                print(f'metric: {metric} not available.')
+
+                data[i-1][metric] = 'Not available'
+
+    save_to_excel(data.reverse(), start_date, end_date)
 
     send_mail(email, password, start_date, end_date)
 
@@ -129,9 +141,9 @@ def save_to_excel(metrics_data, start_date, end_date):
 
     print('Saving to excel...')
 
-    df = pd.DataFrame(metrics_data, index=pd.RangeIndex(0,1) ,columns= metrics_data)
+    df = pd.DataFrame(metrics_data, index=pd.RangeIndex(0,7), columns= metrics_list)
 
-    df.to_excel(f"Metricas_desde_{start_date}_a_{end_date}.xlsx", index=True, columns=metrics_data)
+    df.to_excel(f"Metricas_desde_{start_date}_a_{end_date}.xlsx", index=True, columns=metrics_list)
 
 def send_mail(email, password, start_date, end_date):
 
@@ -167,3 +179,7 @@ def send_mail(email, password, start_date, end_date):
     remove(basename(excel_file))
 
     print('email sent successfully.')
+
+if __name__ == '__main__':
+
+    get_metrics_data('semanal', 'nehuenv620@gmail.com', 'vzkfvhnhhiooiiuk')
