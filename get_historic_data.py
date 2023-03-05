@@ -13,6 +13,7 @@ MAIN_BTNS = {
 
 METRICS = {
     'Active users' : "//span[text()='Active Users']",
+    'New vs Returning' : "//span[text()='New vs Returning']" 
 }
 
 AUDIENCE_METRICS = {
@@ -135,12 +136,100 @@ def get_audience_overview_metrics():
 
 def get_active_users():
 
-    pass
+    driver = start_driver()
+
+    audience = driver.find_element(By.XPATH, MAIN_BTNS['Audience']) 
+
+    audience.click()
+
+    act_users = driver.find_element(By.XPATH, METRICS['Active users'])
+
+    act_users.click()
+
+    date_selector = driver.find_element(By.CLASS_NAME, DATE_RANGE['Date selector'])
+
+    date_selector.click()
+
+    st_year = 2009
+    end_year = 2011
+
+    while True:
+
+        start = driver.find_element(By.CLASS_NAME, DATE_RANGE['Input start'])
+
+        start.send_keys(f'Jan 4, {st_year}')
+
+        end = driver.find_element(By.CLASS_NAME, DATE_RANGE['Input end'])
+
+        end.send_keys(f'Jan 3, {end_year}')
+
+        apply = driver.find_element(By.CLASS_NAME, DATE_RANGE['Apply'])
+
+        apply.click()
+
+        export = driver.find_element(By.CLASS_NAME, EXPORT['Export'])
+
+        export.click()
+
+        gsheets = driver.find_element(By.CLASS_NAME, EXPORT['GS'])
+
+        gsheets.click()
+
+        st_year += 2
+        end_year += 2
+
+        if end_year > 2023:
+
+            break
+
 
 def get_event_metrics():
 
-    pass
+    driver = start_driver()
+
+    behavior = driver.find_element(By.XPATH, MAIN_BTNS['Behavior']) 
+
+    behavior.click()
+
+    events = driver.find_element(By.XPATH, MAIN_BTNS['Events'])
+
+    events.click()
+
+    overview = driver.find_elements(By.XPATH, MAIN_BTNS['Overview'])[1]
+
+    overview.click()
+
+    start = driver.find_element(By.CLASS_NAME, DATE_RANGE['Input start'])
+
+    start.send_keys(f'Jan 4, 2009')
+
+    end = driver.find_element(By.CLASS_NAME, DATE_RANGE['Input end'])
+
+    end.send_keys(f'Jan 3, 2023')
+
+    apply = driver.find_element(By.CLASS_NAME, DATE_RANGE['Apply'])
+
+    apply.click()
+
+    export = driver.find_element(By.CLASS_NAME, EXPORT['Export'])
+
+    export.click()
+
+    gsheets = driver.find_element(By.CLASS_NAME, EXPORT['GS'])
+
+    gsheets.click()
 
 def get_audience_behavior_data():
 
-    pass
+    """
+    driver = start_driver()
+
+    audience = driver.find_element(By.XPATH, MAIN_BTNS['Audience']) 
+
+    audience.click()
+
+    behavior = driver.find_element(By.XPATH, MAIN_BTNS['Behavior']) 
+
+    behavior.click()
+
+    """
