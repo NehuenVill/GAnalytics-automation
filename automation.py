@@ -46,7 +46,10 @@ metrics_list = ['Date',
                 'sessionsPerUser',
                 'totalUsers',
                 'userEngagementDuration',
-                'wauPerMau'
+                'wauPerMau',
+                'NewUsers',
+                'ReturningUsers',
+                'EvolokEvents'
                 ]
 
 
@@ -98,72 +101,6 @@ def set_dates(date_range):
 
     return [end_date, start_date]
 
-def get_metrics_dataOLDVERSION(d_range, email, password) -> dict:
-
-    """Function to get data from the GA API.
-        
-    """
-
-    date_range = set_dates(d_range)
-
-    end_date = date_range[0]
-    start_date = date_range[1]
-
-    today = date.today()
-
-    data = [{}, {}, {}, {}, {}, {}, {}]
-
-    for i in range(7,0,-1):
-
-        data[i-1]['Date'] = (today - timedelta(days=i+1)).strftime('%m-%d-%Y')
-
-        print(f"Getting info from date: {data[i-1]['Date']}")
-
-        for metric in metrics_list:
-
-            if metric == 'Date':
-
-                continue
-
-            print('-'*100)
-
-            print(f'\nGetting metric: {metric}')
-
-            try:
-
-                request = RunReportRequest(
-                    property=f"properties/{property_id}",
-                    metrics=[Metric(name=metric)],
-                    date_ranges=[DateRange(start_date=f'{i+1}daysAgo', end_date=f'{i+1}daysAgo')]
-                )
-
-                full_response = client.run_report(request)
-
-            except InvalidArgument:
-            
-
-                print(f'Could not get info from the metric: {metric}')
-
-                data[i-1][metric] = 'Not available'
-
-                continue
-
-            try:
-
-                data[i-1][metric] = full_response.rows[0].metric_values[0].value
-
-                print(f'Extracted metric: {metric} ---- value = {data[i-1][metric]}')
-
-            except IndexError:
-
-                print(f'metric: {metric} not available.')
-
-                data[i-1][metric] = 'Not available'
-
-    save_to_excel(data.reverse(), start_date, end_date)
-
-    send_mail(email, password, start_date, end_date)
-
 def get_data_manual(start_date, end_date, email, password):
 
     start = date(year=int(start_date.split('-')[0]), month=int(start_date.split('-')[1]),day=int(start_date.split('-')[2]))
@@ -182,7 +119,7 @@ def get_data_manual(start_date, end_date, email, password):
 
         st_date_range = start.strftime('%Y-%m-%d')
 
-        for j in range(4,5):
+        for j in range(0,4):
 
             print('-'*100)
 
@@ -259,12 +196,12 @@ def get_data_manual(start_date, end_date, email, password):
 
                         returning = full_response.rows[1].metric_values[0].value
 
-                        data[day_num]['New Users'] = new
+                        data[day_num]['NewUsers'] = new
 
-                        data[day_num]['Returning Users'] = returning
+                        data[day_num]['ReturningUsers'] = returning
 
-                        print(f"Extracted metric: New Users ---- value = {data[day_num]['New Users']}")
-                        print(f"Extracted metric: Returning Users ---- value = {data[day_num]['Returning Users']}")
+                        print(f"Extracted metric: NewUsers ---- value = {data[day_num]['NewUsers']}")
+                        print(f"Extracted metric: ReturningUsers ---- value = {data[day_num]['ReturningUsers']}")
 
                     except IndexError:
 
@@ -273,35 +210,6 @@ def get_data_manual(start_date, end_date, email, password):
                         data[day_num][metric] = 'Not available'
 
                 elif j == 3:
-
-                    continue
-
-                    request = RunReportRequest(
-                        property=f"properties/{property_id}",
-                        metrics=[Metric(name=metrics_list[13])],
-                        dimensions=[Dimension(name='pagePath')],
-                        date_ranges=[DateRange(start_date=st_date_range, end_date=st_date_range)]
-                    )
-
-                    full_response = client.run_report(request)
-
-                    try:
-
-                        for n, metric in enumerate(full_response.rows[0].metric_values):
-
-                            data[day_num][full_response.metric_headers[n].name] = metric.value
-
-                            print(f'Extracted metric: {full_response.metric_headers[n].name} ---- value = {data[day_num][full_response.metric_headers[n].name]}')
-
-                    except IndexError:
-
-                        print(f'metric: {metric} not available.')
-
-                        data[day_num][metric] = 'Not available'
-                
-                elif j == 4:
-
-                    continue
 
                     request = RunReportRequest(
                         property=f"properties/{property_id}",
@@ -314,21 +222,17 @@ def get_data_manual(start_date, end_date, email, password):
 
                     try:
 
-                        for n, metric in enumerate(full_response.rows[0].metric_values):
+                        evolok = full_response.rows[7].metric_values[0].value
 
-                            data[day_num][full_response.metric_headers[n].name] = metric.value
+                        data[day_num]['EvolokEvents'] = evolok
 
-                            print(f'Extracted metric: {full_response.metric_headers[n].name} ---- value = {data[day_num][full_response.metric_headers[n].name]}')
+                        print(f"Extracted metric: EvolokEvents ---- value = {data[day_num]['EvolokEvents']}")
 
                     except IndexError:
 
                         print(f'metric: {metric} not available.')
 
                         data[day_num][metric] = 'Not available'
-
-                print(full_response)
-
-                break
 
             except InvalidArgument:
 
