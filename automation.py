@@ -1,6 +1,6 @@
 from os import environ, remove
 import ssl
-from time import strftime
+from tkinter import E
 import pandas as pd
 import smtplib
 from datetime import date, timedelta
@@ -8,14 +8,14 @@ from dateutil.relativedelta import relativedelta
 from os.path import basename
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.utils import COMMASPACE, formatdate
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
-from google.analytics.data_v1beta.types import DateRange
-from google.analytics.data_v1beta.types import Metric
-from google.analytics.data_v1beta.types import Dimension
-from google.analytics.data_v1beta.types import RunReportRequest
-from google.analytics.data_v1beta.types import CohortSpec, CohortReportSettings
+from google.analytics.data_v1beta.types import (DateRange,
+                                                Metric,
+                                                Dimension,
+                                                RunReportRequest,
+                                                FilterExpression,
+                                                Filter
+                                                )
 from google.api_core.exceptions import InvalidArgument
 import openpyxl
 import sqlite3
@@ -47,11 +47,13 @@ metrics_list = ['Date',
                 'totalUsers',
                 'userEngagementDuration',
                 'wauPerMau',
-                'NewUsers',
                 'ReturningUsers',
                 'EvolokEvents'
                 ]
 
+
+# Change insert_to_db function so that it doesn't depend on a fixed amount
+# of metrics_list items.
 
 def insert_to_db(f_data):
 
@@ -101,6 +103,11 @@ def set_dates(date_range):
 
     return [end_date, start_date]
 
+# Change get_data_manual function so that it doesn't depend on a fixed amount
+# of metrics_list items.
+
+# Change the get_metrics_data to use the get data manual with fixed dates.
+
 def get_data_manual(start_date, end_date, email, password):
 
     start = date(year=int(start_date.split('-')[0]), month=int(start_date.split('-')[1]),day=int(start_date.split('-')[2]))
@@ -119,7 +126,7 @@ def get_data_manual(start_date, end_date, email, password):
 
         st_date_range = start.strftime('%Y-%m-%d')
 
-        for j in range(0,4):
+        for j in range(3,4):
 
             print('-'*100)
 
@@ -214,11 +221,12 @@ def get_data_manual(start_date, end_date, email, password):
                     request = RunReportRequest(
                         property=f"properties/{property_id}",
                         metrics=[Metric(name=metrics_list[9])],
-                        dimensions=[Dimension(name='eventName')],
-                        date_ranges=[DateRange(start_date=st_date_range, end_date=st_date_range)]
+                        dimensions=[Dimension(name='customEvent:')],
+                        date_ranges=[DateRange(start_date=st_date_range, end_date=st_date_range)],
                     )
-
                     full_response = client.run_report(request)
+
+                    print(full_response)
 
                     try:
 
@@ -234,7 +242,9 @@ def get_data_manual(start_date, end_date, email, password):
 
                         data[day_num][metric] = 'Not available'
 
-            except InvalidArgument:
+            except Exception as e:
+
+                print(e)
 
                 print('Could not get info from metrics metrics requested')
 

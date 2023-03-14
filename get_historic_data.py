@@ -2,6 +2,8 @@ from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 from time import sleep
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 MAIN_BTNS = {
     'Audience' : "//span[text()='Audience']",
@@ -60,7 +62,7 @@ def start_driver():
     driver = webdriver.Chrome(ChromeDriverManager().install())
     driver.get("https://analytics.google.com/analytics/web/?authuser=2#/a6897643w13263073p13942924/")
 
-    sleep(150)
+    sleep(30)
 
     return driver
 
@@ -68,17 +70,25 @@ def get_audience_overview_metrics():
 
     driver = start_driver()
 
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, MAIN_BTNS['Audience'])))
+
     audience = driver.find_element(By.XPATH, MAIN_BTNS['Audience']) 
 
     audience.click()
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, MAIN_BTNS['Overview'])))
 
     overview = driver.find_element(By.XPATH, MAIN_BTNS['Overview']) 
 
     overview.click()
 
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DROPDOWN['Dropdown'])))
+
     ov_dropdown = driver.find_element(By.CLASS_NAME, DROPDOWN['Dropdown'])
 
     ov_dropdown.click()
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DROPDOWN['Items'])))
 
     ov_items = driver.find_elements(By.CLASS_NAME, DROPDOWN['Items'])
 
@@ -146,13 +156,19 @@ def get_active_users():
 
     driver = start_driver()
 
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, MAIN_BTNS['Audience'])))
+
     audience = driver.find_element(By.XPATH, MAIN_BTNS['Audience']) 
 
     audience.click()
 
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, METRICS['Active users'])))
+
     act_users = driver.find_element(By.XPATH, METRICS['Active users'])
 
     act_users.click()
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DATE_RANGE['Date selector'])))
 
     date_selector = driver.find_element(By.CLASS_NAME, DATE_RANGE['Date selector'])
 
@@ -376,4 +392,4 @@ def google_sheets_save(driver : webdriver.Chrome):
 
 if __name__ == '__main__':
 
-    start_driver()
+    get_active_users()
