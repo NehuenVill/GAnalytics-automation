@@ -38,16 +38,16 @@ DROPDOWN = {
 }
 
 DATE_RANGE = {
-    'Date selector' : 'ID-container._GAPd',
-    'Input start' : 'ID-datecontrol-primary-start._GATg ACTION-daterange_input.TARGET-primary_start._GAfl',
-    'Input end' : 'ID-datecontrol-primary-end _GATg.ACTION-daterange_input.TARGET-primary_end',
-    'Apply' : 'ID-apply.ACTION-apply.TARGET-.C_DATECONTROL_APPLY',
+    'Date selector' : '/html/body/div[1]/div[2]/div/div[1]/div/div[4]/div[2]/div/div/div/div[2]/div/div[1]/div[1]/div/div/div[2]/div/div[1]/div[2]/div/div[1]/table/tbody/tr',
+    'Input start' : '/html/body/div[1]/div[2]/div/div[1]/div/div[4]/div[2]/div/div/div/div[2]/div/div[1]/div[1]/div/div/div[2]/div/div[1]/div[2]/div/div[2]/table/tbody/tr/td[2]/div/div[2]/input[1]',
+    'Input end' : '/html/body/div[1]/div[2]/div/div[1]/div/div[4]/div[2]/div/div/div/div[2]/div/div[1]/div[1]/div/div/div[2]/div/div[1]/div[2]/div/div[2]/table/tbody/tr/td[2]/div/div[2]/input[2]',
+    'Apply' : '/html/body/div[1]/div[2]/div/div[1]/div/div[4]/div[2]/div/div/div/div[2]/div/div[1]/div[1]/div/div/div[2]/div/div[1]/div[2]/div/div[2]/table/tbody/tr/td[2]/div/input',
     
 }
 
 EXPORT = {
-    'Export' : 'ID-exportControlButton.C_REPORTTOOLBAR_BTN_SIMPLE.ACTION-exportMenu.TARGET-',
-    'GS' : 'ACTION-export.TARGET-FOR_TRIX'
+    'Export' : "//span[text()='Export']",
+    'GS' : "//span[text()='Google Sheets']"
 }
 
 OTHERS = {
@@ -82,6 +82,14 @@ def get_audience_overview_metrics():
 
     overview.click()
 
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.ID, 'galaxyIframe')))
+
+    iframe = driver.find_element(By.ID, 'galaxyIframe')
+
+    driver.switch_to.frame(iframe)
+
+    sleep(3)
+
     WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DROPDOWN['Dropdown'])))
 
     ov_dropdown = driver.find_element(By.CLASS_NAME, DROPDOWN['Dropdown'])
@@ -98,49 +106,79 @@ def get_audience_overview_metrics():
 
         ov_items[i].click()
 
-        date_selector = driver.find_element(By.CLASS_NAME, DATE_RANGE['Date selector'])
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Date selector'])))
+
+        date_selector = driver.find_element(By.XPATH, DATE_RANGE['Date selector'])
 
         date_selector.click()
 
-        st_year = 2009
-        end_year = 2011
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Input start'])))
 
-        while True:
+        start = driver.find_element(By.CLASS_NAME, DATE_RANGE['Input start'])
 
-            start = driver.find_element(By.CLASS_NAME, DATE_RANGE['Input start'])
+        sleep(1)
 
-            start.send_keys(f'Jan 4, {st_year}')
+        start.clear()
 
-            end = driver.find_element(By.CLASS_NAME, DATE_RANGE['Input end'])
+        sleep(1)
 
-            end.send_keys(f'Jan 3, {end_year}')
+        start.send_keys(f'Jan 4, 2009')
 
-            apply = driver.find_element(By.CLASS_NAME, DATE_RANGE['Apply'])
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Input end'])))
 
-            apply.click()
+        end = driver.find_element(By.CLASS_NAME, DATE_RANGE['Input end'])
 
-            export = driver.find_element(By.CLASS_NAME, EXPORT['Export'])
+        sleep(1)
 
-            export.click()
+        end.clear()
 
-            gsheets = driver.find_element(By.CLASS_NAME, EXPORT['GS'])
+        sleep(1)
 
-            gsheets.click()
+        end.send_keys(f'Jan 3, 2023')
 
-            google_sheets_save(driver)
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Apply'])))
 
-            st_year += 2
-            end_year += 2
+        apply = driver.find_element(By.XPATH, DATE_RANGE['Apply'])
 
-            if end_year > 2023:
+        apply.click()
 
-                break
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, EXPORT['Export'])))
+
+        export = driver.find_element(By.XPATH, EXPORT['Export'])
+
+        sleep(1)
+
+        export.click()
+
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, EXPORT['GS'])))
+
+        gsheets = driver.find_element(By.XPATH, EXPORT['GS'])
+
+        sleep(1)
+
+        gsheets.click()
+
+        current_handles = driver.window_handles
+
+        google_sheets_save(driver, current_handles)
 
         driver.refresh()
+
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.ID, 'galaxyIframe')))
+
+        iframe = driver.find_element(By.ID, 'galaxyIframe')
+
+        driver.switch_to.frame(iframe)
+
+        sleep(3)
+
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DROPDOWN['Dropdown'])))
 
         ov_dropdown = driver.find_element(By.CLASS_NAME, DROPDOWN['Dropdown'])
 
         ov_dropdown.click()
+
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DROPDOWN['Items'])))
 
         ov_items = driver.find_elements(By.CLASS_NAME, DROPDOWN['Items'])
 
@@ -168,43 +206,97 @@ def get_active_users():
 
     act_users.click()
 
-    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DATE_RANGE['Date selector'])))
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.ID, 'galaxyIframe')))
 
-    date_selector = driver.find_element(By.CLASS_NAME, DATE_RANGE['Date selector'])
+    iframe = driver.find_element(By.ID, 'galaxyIframe')
 
-    date_selector.click()
+    driver.switch_to.frame(iframe)
 
-    st_year = 2009
-    end_year = 2011
+    st_year = 2015
+    end_year = 2017
 
     while True:
 
-        start = driver.find_element(By.CLASS_NAME, DATE_RANGE['Input start'])
+        sleep(3)
+
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Date selector'])))
+
+        date_selector = driver.find_element(By.XPATH, DATE_RANGE['Date selector'])
+
+        date_selector.click()
+
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Input start'])))
+
+        start = driver.find_element(By.XPATH, DATE_RANGE['Input start'])
+
+        sleep(1)
+
+        start.clear()
+
+        sleep(1)
 
         start.send_keys(f'Jan 4, {st_year}')
 
-        end = driver.find_element(By.CLASS_NAME, DATE_RANGE['Input end'])
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Input end'])))
+
+        end = driver.find_element(By.XPATH, DATE_RANGE['Input end'])
+
+        sleep(1)
+
+        end.clear()
+
+        sleep(1)
 
         end.send_keys(f'Jan 3, {end_year}')
 
-        apply = driver.find_element(By.CLASS_NAME, DATE_RANGE['Apply'])
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Apply'])))
+
+        apply = driver.find_element(By.XPATH, DATE_RANGE['Apply'])
 
         apply.click()
 
-        export = driver.find_element(By.CLASS_NAME, EXPORT['Export'])
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, EXPORT['Export'])))
 
-        export.click()
+        sleep(10)
 
-        gsheets = driver.find_element(By.CLASS_NAME, EXPORT['GS'])
+        export = driver.find_element(By.XPATH, EXPORT['Export'])
 
-        gsheets.click()
+        sleep(1)
 
-        google_sheets_save(driver)
+        driver.execute_script("arguments[0].click();", export)
+
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, EXPORT['GS'])))
+
+        sleep(1)
+
+        gsheets = driver.find_element(By.XPATH, EXPORT['GS'])
+
+        sleep(1)
+
+        driver.execute_script("arguments[0].click();", gsheets)
+
+        current_handles = driver.window_handles
+
+        google_sheets_save(driver, current_handles)
+
+        driver.refresh()
+
+        sleep(2.5)
+
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.ID, 'galaxyIframe')))
+
+        iframe = driver.find_element(By.ID, 'galaxyIframe')
+
+        driver.switch_to.frame(iframe)
+
+        sleep(10)
 
         st_year += 2
         end_year += 2
 
         if end_year > 2023:
+
+            driver.quit()
 
             break
 
@@ -212,21 +304,39 @@ def get_event_metrics():
 
     driver = start_driver()
 
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, MAIN_BTNS['Behavior'])))
+
     behavior = driver.find_element(By.XPATH, MAIN_BTNS['Behavior']) 
 
     behavior.click()
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, MAIN_BTNS['Events'])))
 
     events = driver.find_element(By.XPATH, MAIN_BTNS['Events'])
 
     events.click()
 
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, MAIN_BTNS['Overview'])))
+
     overview = driver.find_elements(By.XPATH, MAIN_BTNS['Overview'])[1]
 
     overview.click()
 
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.ID, 'galaxyIframe')))
+
+    iframe = driver.find_element(By.ID, 'galaxyIframe')
+
+    driver.switch_to.frame(iframe)
+
+    sleep(3)
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DROPDOWN['Dropdown'])))
+
     ov_dropdown = driver.find_element(By.CLASS_NAME, DROPDOWN['Dropdown'])
 
     ov_dropdown.click()
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DROPDOWN['Items'])))
 
     ov_items = driver.find_elements(By.CLASS_NAME, DROPDOWN['Items'])
 
@@ -236,37 +346,75 @@ def get_event_metrics():
 
         ov_items[i].click()
 
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DATE_RANGE['Date selector'])))
+
         date_selector = driver.find_element(By.CLASS_NAME, DATE_RANGE['Date selector'])
 
         date_selector.click()
 
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DATE_RANGE['Input start'])))
+
         start = driver.find_element(By.CLASS_NAME, DATE_RANGE['Input start'])
+
+        sleep(1)
+
+        start.clear
+
+        sleep(1)
 
         start.send_keys(f'Jan 4, 2009')
 
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DATE_RANGE['Input end'])))
+
         end = driver.find_element(By.CLASS_NAME, DATE_RANGE['Input end'])
 
+        sleep(1)
+
+        end.clear()
+
+        sleep(1)
+
         end.send_keys(f'Jan 3, 2023')
+
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DATE_RANGE['Apply'])))
 
         apply = driver.find_element(By.CLASS_NAME, DATE_RANGE['Apply'])
 
         apply.click()
 
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, EXPORT['Export'])))
+
         export = driver.find_element(By.CLASS_NAME, EXPORT['Export'])
 
         export.click()
+
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, EXPORT['GS'])))
 
         gsheets = driver.find_element(By.CLASS_NAME, EXPORT['GS'])
 
         gsheets.click()
 
-        google_sheets_save(driver)
+        current_handles = driver.window_handles
+
+        google_sheets_save(driver, current_handles)
 
         driver.refresh()
+
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.ID, 'galaxyIframe')))
+
+        iframe = driver.find_element(By.ID, 'galaxyIframe')
+
+        driver.switch_to.frame(iframe)
+
+        sleep(3)
+
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DROPDOWN['Dropdown'])))
 
         ov_dropdown = driver.find_element(By.CLASS_NAME, DROPDOWN['Dropdown'])
 
         ov_dropdown.click()
+        
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DROPDOWN['Items'])))
 
         ov_items = driver.find_elements(By.CLASS_NAME, DROPDOWN['Items'])
 
@@ -282,51 +430,101 @@ def get_audience_behavior_data():
 
     driver = start_driver()
 
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, MAIN_BTNS['Audience'])))
+
     audience = driver.find_element(By.XPATH, MAIN_BTNS['Audience']) 
 
     audience.click()
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, MAIN_BTNS['Behavior'])))
 
     behavior = driver.find_element(By.XPATH, MAIN_BTNS['Behavior']) 
 
     behavior.click()
 
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, METRICS['New vs Returning'])))
+
     newvsret = driver.find_element(By.XPATH, METRICS['New vs Returning'])
 
     newvsret.click()
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, OTHERS['Select metric'])))
 
     select = driver.find_element(By.XPATH, OTHERS['Select metric'])
 
     select.click()
 
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, OTHERS['Metric input'])))
+
     metric_input = driver.find_element(By.CLASS_NAME, OTHERS['Metric input'])
 
+    sleep(1)
+
+    metric_input.clear()
+
+    sleep(1)
+
     metric_input.send_keys('New users')
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, METRICS['New Users'])))
 
     new_users = driver.find_element(By.XPATH, METRICS['New Users'])
 
     new_users.click()
 
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DATE_RANGE['Date selector'])))
+
+    date_selector = driver.find_element(By.CLASS_NAME, DATE_RANGE['Date selector'])
+
+    date_selector.click()
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DATE_RANGE['Input start'])))
+
     start = driver.find_element(By.CLASS_NAME, DATE_RANGE['Input start'])
+
+    sleep(1)
+
+    start.clear()
+
+    sleep(1)
 
     start.send_keys(f'Jan 4, 2009')
 
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DATE_RANGE['Input end'])))
+
     end = driver.find_element(By.CLASS_NAME, DATE_RANGE['Input end'])
 
+    sleep(1)
+
+    end.clear()
+
+    sleep(1)
+
     end.send_keys(f'Jan 3, 2023')
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DATE_RANGE['Apply'])))
 
     apply = driver.find_element(By.CLASS_NAME, DATE_RANGE['Apply'])
 
     apply.click()
 
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, EXPORT['Export'])))
+
     export = driver.find_element(By.CLASS_NAME, EXPORT['Export'])
 
     export.click()
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, EXPORT['GS'])))
 
     gsheets = driver.find_element(By.CLASS_NAME, EXPORT['GS'])
 
     gsheets.click()
 
-    google_sheets_save(driver)
+    current_handles = driver.window_handles
+
+    google_sheets_save(driver, current_handles)
+
+## later!!!
 
 def get_evolok_metrics():
 
@@ -348,42 +546,73 @@ def get_evolok_metrics():
 
     log_en.click()
 
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DATE_RANGE['Date selector'])))
+
     date_selector = driver.find_element(By.CLASS_NAME, DATE_RANGE['Date selector'])
 
     date_selector.click()
 
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DATE_RANGE['Input start'])))
+
     start = driver.find_element(By.CLASS_NAME, DATE_RANGE['Input start'])
+
+    sleep(1)
+
+    start.clear
+
+    sleep(1)
 
     start.send_keys(f'Jan 4, 2009')
 
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DATE_RANGE['Input end'])))
+
     end = driver.find_element(By.CLASS_NAME, DATE_RANGE['Input end'])
 
+    sleep(1)
+
+    end.clear()
+
+    sleep(1)
+
     end.send_keys(f'Jan 3, 2023')
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DATE_RANGE['Apply'])))
 
     apply = driver.find_element(By.CLASS_NAME, DATE_RANGE['Apply'])
 
     apply.click()
 
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, EXPORT['Export'])))
+
     export = driver.find_element(By.CLASS_NAME, EXPORT['Export'])
 
     export.click()
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, EXPORT['GS'])))
 
     gsheets = driver.find_element(By.CLASS_NAME, EXPORT['GS'])
 
     gsheets.click()
 
-    google_sheets_save(driver)
+    current_handles = driver.window_handles
+
+    google_sheets_save(driver, current_handles)
 
 
-def google_sheets_save(driver : webdriver.Chrome):
+
+def google_sheets_save(driver : webdriver.Chrome, current_handles):
+
+    sleep(10)
 
     driver.switch_to.window(driver.window_handles[1])
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.ID, 'confirmActionButton')))
 
     save_btn = driver.find_element(By.ID, 'confirmActionButton')
 
     save_btn.click()
 
-    sleep(7.5)
+    sleep(5)
 
     driver.close()
 
