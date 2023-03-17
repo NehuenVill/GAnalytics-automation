@@ -1,9 +1,15 @@
+import json
+import pandas as pd
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 from time import sleep
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from datetime import date
+from datetime import timedelta
+import re
+from selenium.common.exceptions import TimeoutException
 
 MAIN_BTNS = {
     'Audience' : "//span[text()='Audience']",
@@ -33,8 +39,9 @@ AUDIENCE_METRICS = {
 }
 
 DROPDOWN = {
-    'Dropdown' : 'ID-buttonText._GAb-_GAci-_GAhi._GAPe',
-    'Items' : '_GAMQ'
+    'Dropdown' : '/html/body/div[1]/div[2]/div/div[1]/div/div[4]/div[2]/div/div/div/div[2]/div/div[1]/div[3]/div/div/div[1]/div[1]/div[2]/div[1]/div',
+    'Item container' : '/html/body/div[1]/div[2]/div/div[1]/div/div[4]/div[2]/div/div/div/div[2]/div/div[1]/div[3]/div/div/div[1]/div[1]/div[2]/div[2]/div/div',
+    'Items' : 'div'
 }
 
 DATE_RANGE = {
@@ -53,9 +60,12 @@ EXPORT = {
 OTHERS = {
     'Login entitlement' : "//span[text()='Login/Entitlement']",
     'Select metric' : "//div[text()='Select a metric']",
-    'Metric input' : "ID-searchBox"
+    'Metric input' : "ID-searchBox",
+    'Loading' : "//div[text()='Loading']"
 }
- 
+
+EXCEL_HEADS = ['Login', 'Entitlement', 'Login/Entitlement']
+
 
 def start_driver():
 
@@ -90,15 +100,63 @@ def get_audience_overview_metrics():
 
     sleep(3)
 
-    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DROPDOWN['Dropdown'])))
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Date selector'])))
 
-    ov_dropdown = driver.find_element(By.CLASS_NAME, DROPDOWN['Dropdown'])
+    date_selector = driver.find_element(By.XPATH, DATE_RANGE['Date selector'])
+
+    date_selector.click()
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Input start'])))
+
+    start = driver.find_element(By.XPATH, DATE_RANGE['Input start'])
+
+    sleep(1)
+
+    start.clear()
+
+    sleep(1)
+
+    start.send_keys(f'Jan 4, 2009')
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Input end'])))
+
+    end = driver.find_element(By.XPATH, DATE_RANGE['Input end'])
+
+    sleep(1)
+
+    end.clear()
+
+    sleep(1)
+
+    end.send_keys(f'Jan 3, 2023')
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Apply'])))
+
+    apply = driver.find_element(By.XPATH, DATE_RANGE['Apply'])
+
+    apply.click()
+
+    sleep(3)
+
+    WebDriverWait(driver, 70).until(EC.invisibility_of_element_located((By.XPATH, OTHERS['Loading'])))
+
+    sleep(3)
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DROPDOWN['Dropdown'])))
+
+    ov_dropdown = driver.find_element(By.XPATH, DROPDOWN['Dropdown'])
 
     ov_dropdown.click()
 
-    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DROPDOWN['Items'])))
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DROPDOWN['Item container'])))
 
-    ov_items = driver.find_elements(By.CLASS_NAME, DROPDOWN['Items'])
+    item_cont = driver.find_element(By.XPATH, DROPDOWN['Item container'])
+
+    sleep(1)
+
+    ov_items = item_cont.find_elements(By.TAG_NAME, DROPDOWN['Items'])
+
+    print(len(ov_items))
 
     i = 0
 
@@ -106,41 +164,7 @@ def get_audience_overview_metrics():
 
         ov_items[i].click()
 
-        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Date selector'])))
-
-        date_selector = driver.find_element(By.XPATH, DATE_RANGE['Date selector'])
-
-        date_selector.click()
-
-        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Input start'])))
-
-        start = driver.find_element(By.CLASS_NAME, DATE_RANGE['Input start'])
-
-        sleep(1)
-
-        start.clear()
-
-        sleep(1)
-
-        start.send_keys(f'Jan 4, 2009')
-
-        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Input end'])))
-
-        end = driver.find_element(By.CLASS_NAME, DATE_RANGE['Input end'])
-
-        sleep(1)
-
-        end.clear()
-
-        sleep(1)
-
-        end.send_keys(f'Jan 3, 2023')
-
-        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Apply'])))
-
-        apply = driver.find_element(By.XPATH, DATE_RANGE['Apply'])
-
-        apply.click()
+        WebDriverWait(driver, 70).until(EC.invisibility_of_element_located((By.XPATH, OTHERS['Loading'])))
 
         WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, EXPORT['Export'])))
 
@@ -164,6 +188,8 @@ def get_audience_overview_metrics():
 
         driver.refresh()
 
+        sleep(15)
+
         WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.ID, 'galaxyIframe')))
 
         iframe = driver.find_element(By.ID, 'galaxyIframe')
@@ -172,15 +198,19 @@ def get_audience_overview_metrics():
 
         sleep(3)
 
-        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DROPDOWN['Dropdown'])))
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DROPDOWN['Dropdown'])))
 
-        ov_dropdown = driver.find_element(By.CLASS_NAME, DROPDOWN['Dropdown'])
+        ov_dropdown = driver.find_element(By.XPATH, DROPDOWN['Dropdown'])
 
         ov_dropdown.click()
 
-        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DROPDOWN['Items'])))
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DROPDOWN['Item container'])))
 
-        ov_items = driver.find_elements(By.CLASS_NAME, DROPDOWN['Items'])
+        item_cont = driver.find_element(By.XPATH, DROPDOWN['Item container'])
+
+        sleep(1)
+
+        ov_items = item_cont.find_elements(By.TAG_NAME, DROPDOWN['Items'])
 
         i += 1
 
@@ -212,8 +242,8 @@ def get_active_users():
 
     driver.switch_to.frame(iframe)
 
-    st_year = 2015
-    end_year = 2017
+    st_year = 2009
+    end_year = 2011
 
     while True:
 
@@ -251,13 +281,17 @@ def get_active_users():
 
         WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Apply'])))
 
+        sleep(1)
+
         apply = driver.find_element(By.XPATH, DATE_RANGE['Apply'])
 
         apply.click()
 
         WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, EXPORT['Export'])))
 
-        sleep(10)
+        sleep(2)
+
+        WebDriverWait(driver, 70).until(EC.invisibility_of_element_located((By.XPATH, OTHERS['Loading'])))
 
         export = driver.find_element(By.XPATH, EXPORT['Export'])
 
@@ -291,8 +325,8 @@ def get_active_users():
 
         sleep(10)
 
-        st_year += 2
-        end_year += 2
+        st_year += 1
+        end_year += 1
 
         if end_year > 2023:
 
@@ -524,80 +558,175 @@ def get_audience_behavior_data():
 
     google_sheets_save(driver, current_handles)
 
-## later!!!
 
-def get_evolok_metrics():
+
+
+def get_login_entitlement():
+
+    # Set up dates from 01/04/2009 to 01/03/2023:
+
+    start_date = date(day=15,month=3,year=2022)
+    end_date = date(day=3,month=1,year=2023)
+
+    # Automation:
 
     driver = start_driver()
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, MAIN_BTNS['Behavior'])))
 
     behavior = driver.find_element(By.XPATH, MAIN_BTNS['Behavior']) 
 
     behavior.click()
 
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, MAIN_BTNS['Events'])))
+
     events = driver.find_element(By.XPATH, MAIN_BTNS['Events'])
 
     events.click()
 
-    top = driver.find_element(By.XPATH, MAIN_BTNS['Top Events'])
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, MAIN_BTNS['Top events'])))
+
+    top = driver.find_element(By.XPATH, MAIN_BTNS['Top events'])
 
     top.click()
+
+    sleep(5)
+
+    WebDriverWait(driver, 70).until(EC.invisibility_of_element_located((By.XPATH, OTHERS['Loading'])))
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.ID, 'galaxyIframe')))
+
+    iframe = driver.find_element(By.ID, 'galaxyIframe')
+
+    driver.switch_to.frame(iframe)
+
+    sleep(3)
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, OTHERS['Login entitlement'])))
 
     log_en = driver.find_element(By.XPATH, OTHERS['Login entitlement'])
 
     log_en.click()
 
-    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DATE_RANGE['Date selector'])))
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, MAIN_BTNS['Evolok'])))
 
-    date_selector = driver.find_element(By.CLASS_NAME, DATE_RANGE['Date selector'])
+    evolok = driver.find_element(By.XPATH, MAIN_BTNS['Evolok'])
 
-    date_selector.click()
+    evolok.click()
 
-    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DATE_RANGE['Input start'])))
+    sleep(5)
 
-    start = driver.find_element(By.CLASS_NAME, DATE_RANGE['Input start'])
+    while True:
 
-    sleep(1)
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Date selector'])))
 
-    start.clear
+        date_selector = driver.find_element(By.XPATH, DATE_RANGE['Date selector'])
 
-    sleep(1)
+        date_selector.click()
+        
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Input end'])))
 
-    start.send_keys(f'Jan 4, 2009')
+        end = driver.find_element(By.XPATH, DATE_RANGE['Input end'])
 
-    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DATE_RANGE['Input end'])))
+        sleep(1)
 
-    end = driver.find_element(By.CLASS_NAME, DATE_RANGE['Input end'])
+        end.clear()
 
-    sleep(1)
+        sleep(1)
 
-    end.clear()
+        end.send_keys(f'{start_date.month}/{start_date.day}/{start_date.year}')
 
-    sleep(1)
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Input start'])))
 
-    end.send_keys(f'Jan 3, 2023')
+        start = driver.find_element(By.XPATH, DATE_RANGE['Input start'])
 
-    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, DATE_RANGE['Apply'])))
+        sleep(1)
 
-    apply = driver.find_element(By.CLASS_NAME, DATE_RANGE['Apply'])
+        start.clear()
 
-    apply.click()
+        sleep(1)
 
-    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, EXPORT['Export'])))
+        start.send_keys(f'{start_date.month}/{start_date.day}/{start_date.year}')
 
-    export = driver.find_element(By.CLASS_NAME, EXPORT['Export'])
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Apply'])))
 
-    export.click()
+        apply = driver.find_element(By.XPATH, DATE_RANGE['Apply'])
 
-    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, EXPORT['GS'])))
+        sleep(2)
 
-    gsheets = driver.find_element(By.CLASS_NAME, EXPORT['GS'])
+        apply.click()
 
-    gsheets.click()
+        sleep(3)
 
-    current_handles = driver.window_handles
+        WebDriverWait(driver, 70).until(EC.invisibility_of_element_located((By.XPATH, OTHERS['Loading'])))
 
-    google_sheets_save(driver, current_handles)
+        sleep(3)
 
+        #SAVE INTO json:
+
+        try:
+
+            WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[1]/div[2]/div/div[1]/div/div[4]/div[2]/div/div/div/div[2]/div/div[1]/div[3]/div/div[2]/div[3]/div[2]/div/table/tbody/tr[1]/td[4]/div')))
+
+            log_ent = driver.find_element(By.XPATH, '/html/body/div[1]/div[2]/div/div[1]/div/div[4]/div[2]/div/div/div/div[2]/div/div[1]/div[3]/div/div[2]/div[3]/div[2]/div/table/tbody/tr[1]/td[4]/div')
+
+            log_ent_val = re.sub(r'\(.*\)', '', log_ent.text)
+
+        except TimeoutException:
+
+            log_ent_val = '0'
+
+        try:
+
+            WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[1]/div[2]/div/div[1]/div/div[4]/div[2]/div/div/div/div[2]/div/div[1]/div[3]/div/div[2]/div[3]/div[2]/div/table/tbody/tr[2]/td[4]/div')))
+
+            log = driver.find_element(By.XPATH, '/html/body/div[1]/div[2]/div/div[1]/div/div[4]/div[2]/div/div/div/div[2]/div/div[1]/div[3]/div/div[2]/div[3]/div[2]/div/table/tbody/tr[2]/td[4]/div')
+
+            log_val = re.sub(r'\(.*\)', '', log.text)
+
+        except TimeoutException:
+
+            log_val = '0'
+
+        try:
+
+            WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[1]/div[2]/div/div[1]/div/div[4]/div[2]/div/div/div/div[2]/div/div[1]/div[3]/div/div[2]/div[3]/div[2]/div/table/tbody/tr[3]/td[4]/div')))
+
+            ent = driver.find_element(By.XPATH, '/html/body/div[1]/div[2]/div/div[1]/div/div[4]/div[2]/div/div/div/div[2]/div/div[1]/div[3]/div/div[2]/div[3]/div[2]/div/table/tbody/tr[3]/td[4]/div')
+
+            ent_val = re.sub(r'\(.*\)', '', ent.text)
+
+        except TimeoutException:
+
+            ent_val = '0'
+        
+
+        LOGIN_ENTITLEMENT = {
+            'Login' : log_ent_val,
+            'Entitlement' : log_val,
+            'Login/Entitlement' : ent_val,
+        }   
+
+        with open('login_entitlement_data.json') as f:
+
+            data = json.load(f)
+
+        with open('login_entitlement_data.json', 'w') as f:
+
+            data['Data'].append(LOGIN_ENTITLEMENT)
+            
+            json.dump(data, f, indent=4)
+
+
+        start_date += timedelta(days=1)
+
+        if start_date > end_date:
+
+            break
+
+        else:
+
+            pass
 
 
 def google_sheets_save(driver : webdriver.Chrome, current_handles):
@@ -618,7 +747,20 @@ def google_sheets_save(driver : webdriver.Chrome, current_handles):
 
     driver.switch_to.window(driver.window_handles[0])
 
+def save_log_ent():
+
+    with open('login_entitlement_data.json') as f:
+
+        data = json.load(f)['Data']
+
+        print('Saving to excel...')
+
+        df = pd.DataFrame(data, index =pd.RangeIndex(0,len(data)),columns = EXCEL_HEADS)
+        
+        df.to_excel(f"log_ent.xlsx", index=True, columns=EXCEL_HEADS)
+
 
 if __name__ == '__main__':
 
-    get_active_users()
+    save_log_ent()
+
