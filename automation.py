@@ -1,6 +1,8 @@
+import math
 from os import environ, remove
 import ssl
 from tkinter import E
+from numpy import full
 import pandas as pd
 import smtplib
 from datetime import date, timedelta
@@ -24,10 +26,9 @@ from time import sleep
  
 property_id = '347990037'
 environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'Proyecto API-8b9749be5c38.json'
-
 client = BetaAnalyticsDataClient()
 
-metrics_list = ['Date',
+METRICS_LIST = [
                 'activeUsers',
                 'averageSessionDuration',
                 'bounceRate',
@@ -39,7 +40,6 @@ metrics_list = ['Date',
                 'eventCount',
                 'eventCountPerUser',
                 'eventsPerSession',
-                'newUsers',
                 'screenPageViews',
                 'screenPageViewsPerSession',
                 'sessions',
@@ -47,13 +47,64 @@ metrics_list = ['Date',
                 'totalUsers',
                 'userEngagementDuration',
                 'wauPerMau',
+                ]
+
+SPECIAL_METRICS = [                             #Metrics that require a dimension
+                'totalUsers',
+                'eventCount'
+]
+
+
+# EXCEL_HEADS = ['Date',
+#                 'activeUsers',
+#                 'averageSessionDuration',
+#                 'bounceRate',
+#                 'crashFreeUsersRate',
+#                 'dauPerMau',
+#                 'dauPerWau',
+#                 'engagedSessions',
+#                 'engagementRate',
+#                 'eventCount',
+#                 'eventCountPerUser',
+#                 'eventsPerSession',
+#                 'screenPageViews',
+#                 'screenPageViewsPerSession',
+#                 'sessions',
+#                 'sessionsPerUser',
+#                 'totalUsers',
+#                 'userEngagementDuration',
+#                 'wauPerMau',
+#                 'NewUsers',
+#                 'ReturningUsers',
+#                 'Login',
+#                 'Entitlement',
+#                 'Login/Entitlement',
+#                 ]
+
+EXCEL_HEADS = ['Date',
+                'activeUsers',
+                'averageSessionDuration',
+                'bounceRate',
+                'crashFreeUsersRate',
+                'dauPerMau',
+                'dauPerWau',
+                'engagedSessions',
+                'engagementRate',
+                'eventCount',
+                'eventCountPerUser',
+                'eventsPerSession',
+                'screenPageViews',
+                'screenPageViewsPerSession',
+                'sessions',
+                'sessionsPerUser',
+                'totalUsers',
+                'userEngagementDuration',
+                'wauPerMau',
+                'NewUsers',
                 'ReturningUsers',
                 'EvolokEvents'
                 ]
 
-
-# Change insert_to_db function so that it doesn't depend on a fixed amount
-# of metrics_list items.
 
 def insert_to_db(f_data):
 
@@ -62,13 +113,27 @@ def insert_to_db(f_data):
     connection = sqlite3.connect("Prensa_base_de_datos.db")
     cursor = connection.cursor()
 
+    insert_values = ''
+
+    for value in EXCEL_HEADS:
+
+        if value == 'Date':
+
+            insert_values += f"'{str(f_data[value])}',"
+
+        else:
+
+            insert_values += f'{f_data[value]},'
+
     try:
 
-        cursor.execute(f"""INSERT INTO Analytics_data VALUES ('{str(f_data['Date'])}',{f_data['activeUsers']},{f_data['averageSessionDuration']},{f_data['bounceRate']},
-        {f_data['crashFreeUsersRate']},{f_data['dauPerMau']},{f_data['dauPerWau']},{f_data['engagedSessions']},
-        {f_data['engagementRate']}, {f_data['eventCount']}, {f_data['eventCountPerUser']}, {f_data['eventsPerSession']}, {f_data['newUsers']},
-        {f_data['screenPageViews']}, {f_data['screenPageViewsPerSession']}, {f_data['sessions']}, {f_data['sessionsPerUser']},
-        {f_data['totalUsers']}, {f_data['userEngagementDuration']}, {f_data['wauPerMau']})""")
+        # cursor.execute(f"""INSERT INTO Analytics_data VALUES ('{str(f_data['Date'])}',{f_data['activeUsers']},{f_data['averageSessionDuration']},{f_data['bounceRate']},
+        # {f_data['crashFreeUsersRate']},{f_data['dauPerMau']},{f_data['dauPerWau']},{f_data['engagedSessions']},
+        # {f_data['engagementRate']}, {f_data['eventCount']}, {f_data['eventCountPerUser']}, {f_data['eventsPerSession']}, {f_data['newUsers']},
+        # {f_data['screenPageViews']}, {f_data['screenPageViewsPerSession']}, {f_data['sessions']}, {f_data['sessionsPerUser']},
+        # {f_data['totalUsers']}, {f_data['userEngagementDuration']}, {f_data['wauPerMau']})""")
+
+        cursor.execute(f"""INSERT INTO Analytics_historic_data VALUES ({insert_values.strip(',')})""")    
 
     except IntegrityError:
 
@@ -77,36 +142,29 @@ def insert_to_db(f_data):
     connection.commit()
     connection.close()
 
-def set_dates(date_range):
+def update_db_columns(new_column, type):
 
-    end_date = date.today()
+    print(f'Adding column: {new_column} to the data base.')
+    
+    connection = sqlite3.connect("Prensa_base_de_datos.db")
+    cursor = connection.cursor()
 
-    if date_range == 'mensual':
+    if type == 'numero':
 
-        start_date = end_date - relativedelta(months=+1)
+        cursor.execute(f"""ALTER TABLE Analytics_data_2 ADD {new_column} FLOAT""")    
 
-    elif date_range == 'semanal':
+        print('Column was added succesfully')
 
-        start_date = end_date - relativedelta(weeks=+1)
+    elif type == 'texto':
 
-    elif type(date_range) == int:
+        cursor.execute(f"""ALTER TABLE Analytics_data_2 ADD {new_column} VARCHAR(200)""")    
 
-        start_date = end_date - relativedelta(days=+date_range)
+        print('Column was added succesfully')
 
     else:
 
-        print('Wrong date range!')
+        print('Incorrect type, unable to add new column')
 
-    end_date = end_date.strftime('%Y-%m-%d')
-
-    start_date = start_date.strftime('%Y-%m-%d')
-
-    return [end_date, start_date]
-
-# Change get_data_manual function so that it doesn't depend on a fixed amount
-# of metrics_list items.
-
-# Change the get_metrics_data to use the get data manual with fixed dates.
 
 def get_data_manual(start_date, end_date, email, password):
 
@@ -126,71 +184,76 @@ def get_data_manual(start_date, end_date, email, password):
 
         st_date_range = start.strftime('%Y-%m-%d')
 
-        for j in range(3,4):
+        print(f'\nGetting metrics')
 
-            print('-'*100)
+        try:
 
-            print(f'\nGetting metrics')
+            metrics = [Metric(name=m) for m in METRICS_LIST]
 
-            try:
+            loops = math.floor(len(METRICS_LIST) / 10)
 
-                if j == 0:
+            last_loop_metrics = len(METRICS_LIST) % 10
+
+            metric_count = 0
+
+            for i in range(0, loops):
+
+                request = RunReportRequest(
+                    property=f"properties/{property_id}",
+                    metrics=metrics[metric_count:metric_count+10],
+                    date_ranges=[DateRange(start_date=st_date_range, end_date=st_date_range)],
+                )
+            
+                full_response = client.run_report(request)
+
+                metric_count += 10
+
+                try:
+
+                    for n, metric in enumerate(full_response.rows[0].metric_values):
+
+                        data[day_num][full_response.metric_headers[n].name] = metric.value
+
+                        print(f'Extracted metric: {full_response.metric_headers[n].name} ---- value = {data[day_num][full_response.metric_headers[n].name]}')
+
+                except IndexError:
+
+                    print(f'metric: {metric} not available.')
+
+                    data[day_num][metric] = 'Not available'
+
+
+            if last_loop_metrics > 0:
+
+                request = RunReportRequest(
+                    property=f"properties/{property_id}",
+                    metrics=metrics[metric_count:metric_count+last_loop_metrics],
+                    date_ranges=[DateRange(start_date=st_date_range, end_date=st_date_range)],
+                )
+
+                full_response = client.run_report(request)
+
+                try:
+
+                    for n, metric in enumerate(full_response.rows[0].metric_values):
+
+                        data[day_num][full_response.metric_headers[n].name] = metric.value
+
+                        print(f'Extracted metric: {full_response.metric_headers[n].name} ---- value = {data[day_num][full_response.metric_headers[n].name]}')
+
+                except IndexError:
+
+                    print(f'metric: {metric} not available.')
+
+                    data[day_num][metric] = 'Not available'
+
+            for metric in SPECIAL_METRICS:
+
+                if metric == 'totalUsers':
 
                     request = RunReportRequest(
                         property=f"properties/{property_id}",
-                        metrics=[Metric(name=metrics_list[1]), Metric(name=metrics_list[2]), Metric(name=metrics_list[3]), Metric(name=metrics_list[4]), 
-                        Metric(name=metrics_list[5]), Metric(name=metrics_list[6]), Metric(name=metrics_list[7]), Metric(name=metrics_list[8]), Metric(name=metrics_list[9]), 
-                        Metric(name=metrics_list[10]) ],
-                        date_ranges=[DateRange(start_date=st_date_range, end_date=st_date_range)],
-                    )
-                
-
-                    full_response = client.run_report(request)
-
-                    try:
-
-                        for n, metric in enumerate(full_response.rows[0].metric_values):
-
-                            data[day_num][full_response.metric_headers[n].name] = metric.value
-
-                            print(f'Extracted metric: {full_response.metric_headers[n].name} ---- value = {data[day_num][full_response.metric_headers[n].name]}')
-
-                    except IndexError:
-
-                        print(f'metric: {metric} not available.')
-
-                        data[day_num][metric] = 'Not available'
-
-                elif j == 1:
-
-                    request = RunReportRequest(
-                        property=f"properties/{property_id}",
-                        metrics=[Metric(name=metrics_list[11]), Metric(name=metrics_list[12]), Metric(name=metrics_list[13]), Metric(name=metrics_list[14]), 
-                        Metric(name=metrics_list[15]), Metric(name=metrics_list[16]), Metric(name=metrics_list[17]), Metric(name=metrics_list[18]), Metric(name=metrics_list[19])],
-                        date_ranges=[DateRange(start_date=st_date_range, end_date=st_date_range)]
-                    )
-
-                    full_response = client.run_report(request)
-
-                    try:
-
-                        for n, metric in enumerate(full_response.rows[0].metric_values):
-
-                            data[day_num][full_response.metric_headers[n].name] = metric.value
-
-                            print(f'Extracted metric: {full_response.metric_headers[n].name} ---- value = {data[day_num][full_response.metric_headers[n].name]}')
-
-                    except IndexError:
-
-                        print(f'metric: {metric} not available.')
-
-                        data[day_num][metric] = 'Not available'
-
-                elif j == 2:
-
-                    request = RunReportRequest(
-                        property=f"properties/{property_id}",
-                        metrics=[Metric(name=metrics_list[17])],
+                        metrics=[Metric(name=metric)],
                         dimensions=[Dimension(name='newVsReturning')],
                         date_ranges=[DateRange(start_date=st_date_range, end_date=st_date_range)]
                     )
@@ -207,7 +270,7 @@ def get_data_manual(start_date, end_date, email, password):
 
                         data[day_num]['ReturningUsers'] = returning
 
-                        print(f"Extracted metric: NewUsers ---- value = {data[day_num]['NewUsers']}")
+                        print(f"Extracted metric: NewUsers = ---- value = {data[day_num]['NewUsers']}")
                         print(f"Extracted metric: ReturningUsers ---- value = {data[day_num]['ReturningUsers']}")
 
                     except IndexError:
@@ -216,17 +279,15 @@ def get_data_manual(start_date, end_date, email, password):
 
                         data[day_num][metric] = 'Not available'
 
-                elif j == 3:
+                elif metric == 'eventCount':
 
                     request = RunReportRequest(
                         property=f"properties/{property_id}",
-                        metrics=[Metric(name=metrics_list[9])],
-                        dimensions=[Dimension(name='customEvent:')],
+                        metrics=[Metric(name=metric)],
+                        dimensions=[Dimension(name='eventName')],
                         date_ranges=[DateRange(start_date=st_date_range, end_date=st_date_range)],
                     )
                     full_response = client.run_report(request)
-
-                    print(full_response)
 
                     try:
 
@@ -242,11 +303,11 @@ def get_data_manual(start_date, end_date, email, password):
 
                         data[day_num][metric] = 'Not available'
 
-            except Exception as e:
+        except Exception as e:
 
-                print(e)
+            print(e)
 
-                print('Could not get info from metrics metrics requested')
+            print('Could not get info from metrics metrics requested')
 
         start = start + timedelta(days=1)
 
@@ -260,96 +321,33 @@ def get_data_manual(start_date, end_date, email, password):
 
     send_mail(email, password, start_date, end_date)
 
-def get_metrics_data(d_range, email, password) -> dict:
+    return data
 
-    """Function to get data from the GA API.
-        
+def get_metrics_data(email, password):
+
     """
-
-    date_range = set_dates(d_range)
-
-    end_date = date_range[0]
-    start_date = date_range[1]
+    Function to get data from the GA API.
+    """
 
     today = date.today()
 
-    data = [{}, {}, {}, {}, {}, {}, {}]
+    start = today - timedelta(days=8)
+    end = today - timedelta(days=2)
 
-    for i in range(7,0,-1):
-
-        data[i-1]['Date'] = (today - timedelta(days=i+1)).strftime('%m/%d/%Y').replace('2023', '23').replace('2024', '24')
-
-        print(f"Getting info from date: {data[i-1]['Date']}")
-
-        for j in range(0,2):
-
-            print('-'*100)
-
-            print(f'\nGetting metrics')
-
-            try:
-
-                if j == 0:
-
-                    request = RunReportRequest(
-                        property=f"properties/{property_id}",
-                        metrics=[Metric(name=metrics_list[1]), Metric(name=metrics_list[2]), Metric(name=metrics_list[3]), Metric(name=metrics_list[4]), 
-                        Metric(name=metrics_list[5]), Metric(name=metrics_list[6]), Metric(name=metrics_list[7]), Metric(name=metrics_list[8]), Metric(name=metrics_list[9]), 
-                        Metric(name=metrics_list[10]) ],
-                        date_ranges=[DateRange(start_date=f'{i+1}daysAgo', end_date=f'{i+1}daysAgo')]
-                    )
-
-                    full_response = client.run_report(request)
-
-                elif j == 1:
-
-                    request = RunReportRequest(
-                        property=f"properties/{property_id}",
-                        metrics=[Metric(name=metrics_list[11]), Metric(name=metrics_list[12]), Metric(name=metrics_list[13]), Metric(name=metrics_list[14]), 
-                        Metric(name=metrics_list[15]), Metric(name=metrics_list[16]), Metric(name=metrics_list[17]), Metric(name=metrics_list[18]), Metric(name=metrics_list[19])],
-                        date_ranges=[DateRange(start_date=f'{i+1}daysAgo', end_date=f'{i+1}daysAgo')]
-                    )
-
-                    full_response = client.run_report(request)
-
-            except InvalidArgument:
-
-                print('Could not get info from metrics metrics requested')
-
-            try:
-
-                for n, metric in enumerate(full_response.rows[0].metric_values):
-
-                    data[i-1][full_response.metric_headers[n].name] = metric.value
-
-                    print(f'Extracted metric: {full_response.metric_headers[n].name} ---- value = {data[i-1][full_response.metric_headers[n].name]}')
-
-            except IndexError:
-
-                print(f'metric: {metric} not available.')
-
-                sleep(50)
-
-                data[i-1][metric] = 'Not available'
-
-    data.reverse()
-
-    save_to_excel(data, start_date, end_date)
+    data = get_data_manual(start.strftime('%Y-%m-%d'), end.strftime('%Y-%m-%d'), email, password)
 
     for row in data:
 
         insert_to_db(row)
-
-    send_mail(email, password, start_date, end_date)
 
 
 def save_to_excel(metrics_data, start_date, end_date):
 
     print('Saving to excel...')
 
-    df = pd.DataFrame(metrics_data, index =pd.RangeIndex(0,len(metrics_data)) ,columns = metrics_list)
+    df = pd.DataFrame(metrics_data, index =pd.RangeIndex(0,len(metrics_data)) ,columns = EXCEL_HEADS)
     
-    df.to_excel(f"Metricas_desde_{start_date}_a_{end_date}.xlsx", index=True, columns=metrics_list)
+    df.to_excel(f"Metricas_desde_{start_date}_a_{end_date}.xlsx", index=True, columns=EXCEL_HEADS)
 
 
 def send_mail(email, password, start_date, end_date):
@@ -387,17 +385,18 @@ def send_mail(email, password, start_date, end_date):
 
     print('email sent successfully.')
 
+
 def export_hist_data_to_db():
 
-    workbook = openpyxl.load_workbook('Datos_históricos_Google_Analytics.xlsx', data_only=True)
+    workbook = openpyxl.load_workbook('Historico - GA3.xlsx', data_only=True)
 
-    worksheet = workbook['Hoja1']
+    worksheet = workbook['Históricos']
 
-    for row in worksheet.iter_rows(min_row=2, max_row=1418):
+    for row in worksheet.iter_rows(min_row=2, max_row=5114):
 
         data = {}
 
-        for i, metric in enumerate(metrics_list):
+        for i, metric in enumerate(EXCEL_HEADS):
 
             if row[i].value == 'Not available':
 
@@ -405,11 +404,21 @@ def export_hist_data_to_db():
 
             elif '-' in str(row[i].value):
 
-                data[metric] = str(row[i].value).replace('-', '/').replace(' 00:00:00', '').replace('2010','10').replace('2011','11').replace('2012','12')
+                print(str(row[i].value))
+
+                try:
+                
+                    day = str(row[i].value).split('-')[2].replace(' 00:00:00', '')
+                    month = str(row[i].value).split('-')[1] 
+                    year = str(row[i].value).split('-')[0].replace('20','')
+
+                    data[metric] = f"{month}/{day}/{year}"
+
+                except IndexError:
+
+                    data[metric] = str(row[i].value)
 
             elif ':' in str(row[i].value):
-
-                print(str(row[i].value))
 
                 minutes = int(str(row[i].value).split(':')[0])
                 seconds = int(str(row[i].value).split(':')[1])
@@ -424,7 +433,7 @@ def export_hist_data_to_db():
 
         print('-'*100)
 
-        print(f'Exporting record: {data}')
+        print(f'Exporting record {data}')
 
         print('-'*100)
 
@@ -432,4 +441,4 @@ def export_hist_data_to_db():
 
 if __name__ == '__main__':
 
-    pass
+    export_hist_data_to_db()

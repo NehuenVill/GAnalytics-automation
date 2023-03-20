@@ -23,7 +23,8 @@ MAIN_BTNS = {
 METRICS = {
     'Active users' : "//span[text()='Active Users']",
     'New vs Returning' : "//span[text()='New vs Returning']",
-    'New users' : "//div[text()='New Users']"
+    'New users' : "/html/body/div[1]/div[2]/div/div[1]/div/div[4]/div[2]/div/div/div/div[2]/div/div[1]/div[3]/div/div[2]/div[3]/div[2]/div/table/tbody/tr[1]/td[4]/div",
+    'Returning users': "/html/body/div[1]/div[2]/div/div[1]/div/div[4]/div[2]/div/div/div/div[2]/div/div[1]/div[3]/div/div[2]/div[3]/div[2]/div/table/tbody/tr[2]/td[4]/div"
 }
 
 AUDIENCE_METRICS = {
@@ -559,6 +560,144 @@ def get_audience_behavior_data():
     google_sheets_save(driver, current_handles)
 
 
+def get_new_vs_returning():
+
+    # Set up dates from 01/04/2009 to 01/03/2023:
+
+    start_date = date(day=5,month=1,year=2009)
+    end_date = date(day=3,month=1,year=2023)
+
+    # Automation:
+
+    driver = start_driver()
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, MAIN_BTNS['Audience'])))
+
+    audience = driver.find_element(By.XPATH, MAIN_BTNS['Audience']) 
+
+    audience.click()
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, MAIN_BTNS['Behavior'])))
+
+    behavior = driver.find_element(By.XPATH, MAIN_BTNS['Behavior']) 
+
+    behavior.click()
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, METRICS['New vs Returning'])))
+
+    nvr = driver.find_element(By.XPATH, METRICS['New vs Returning'])
+
+    nvr.click()
+
+    sleep(1.5)
+
+    WebDriverWait(driver, 70).until(EC.invisibility_of_element_located((By.XPATH, OTHERS['Loading'])))
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.ID, 'galaxyIframe')))
+
+    iframe = driver.find_element(By.ID, 'galaxyIframe')
+
+    driver.switch_to.frame(iframe)
+
+    sleep(1.5)
+
+    while True:
+
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Date selector'])))
+
+        date_selector = driver.find_element(By.XPATH, DATE_RANGE['Date selector'])
+
+        date_selector.click()
+        
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Input end'])))
+
+        end = driver.find_element(By.XPATH, DATE_RANGE['Input end'])
+
+        sleep(0.5)
+
+        end.clear()
+
+        sleep(0.5)
+
+        end.send_keys(f'{start_date.month}/{start_date.day}/{start_date.year}')
+
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Input start'])))
+
+        start = driver.find_element(By.XPATH, DATE_RANGE['Input start'])
+
+        sleep(0.5)
+
+        start.clear()
+
+        sleep(0.5)
+
+        start.send_keys(f'{start_date.month}/{start_date.day}/{start_date.year}')
+
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Apply'])))
+
+        apply = driver.find_element(By.XPATH, DATE_RANGE['Apply'])
+
+        sleep(1)
+
+        apply.click()
+
+        sleep(1.5)
+
+        WebDriverWait(driver, 70).until(EC.invisibility_of_element_located((By.XPATH, OTHERS['Loading'])))
+
+        sleep(1.5)
+
+        #SAVE INTO json:
+
+        new_users = re.sub(r'\(.*\)', '' , driver.find_element(By.XPATH, METRICS['New users']).text)
+
+        ret_users = re.sub(r'\(.*\)', '' , driver.find_element(By.XPATH, METRICS['Returning users']).text)
+
+        new_vs_ret = {
+            'NewUsers' : new_users,
+            'ReturningUsers': ret_users
+        }   
+
+        with open('new_vs_ret_data.json') as f:
+
+            data = json.load(f)
+
+        with open('new_vs_ret_data.json', 'w') as f:
+
+            data['Data'].append(new_vs_ret)
+            
+            json.dump(data, f, indent=4)
+
+
+        start_date += timedelta(days=1)
+
+        if start_date > end_date:
+
+            break
+
+        else:
+
+            pass
+
+
+def google_sheets_save(driver : webdriver.Chrome, current_handles):
+
+    sleep(10)
+
+    driver.switch_to.window(driver.window_handles[1])
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.ID, 'confirmActionButton')))
+
+    save_btn = driver.find_element(By.ID, 'confirmActionButton')
+
+    save_btn.click()
+
+    sleep(5)
+
+    driver.close()
+
+    driver.switch_to.window(driver.window_handles[0])
+
 
 
 def get_login_entitlement():
@@ -762,5 +901,4 @@ def save_log_ent():
 
 if __name__ == '__main__':
 
-    save_log_ent()
-
+    get_new_vs_returning()
