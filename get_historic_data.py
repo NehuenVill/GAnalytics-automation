@@ -564,7 +564,7 @@ def get_new_vs_returning():
 
     # Set up dates from 01/04/2009 to 01/03/2023:
 
-    start_date = date(day=5,month=1,year=2009)
+    start_date = date(day=30,month=10,year=2021)
     end_date = date(day=3,month=1,year=2023)
 
     # Automation:
@@ -589,7 +589,7 @@ def get_new_vs_returning():
 
     nvr.click()
 
-    sleep(1.5)
+    sleep(3)
 
     WebDriverWait(driver, 70).until(EC.invisibility_of_element_located((By.XPATH, OTHERS['Loading'])))
 
@@ -605,10 +605,35 @@ def get_new_vs_returning():
 
         WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Date selector'])))
 
-        date_selector = driver.find_element(By.XPATH, DATE_RANGE['Date selector'])
+        try:
 
-        date_selector.click()
+            date_selector = driver.find_element(By.XPATH, DATE_RANGE['Date selector'])
+
+            date_selector.click()
         
+        except Exception as e:
+
+            print(e)
+
+            WebDriverWait(driver, 70).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[74]/div[2]/div/div[4]/div')))
+
+            sleep(1)
+
+            warning = driver.find_element(By.XPATH, '/html/body/div[74]/div[2]/div/div[4]/div')
+
+            sleep(0.5)
+
+            warning.click()
+
+            sleep(1.5)
+
+            WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Date selector'])))
+
+            date_selector = driver.find_element(By.XPATH, DATE_RANGE['Date selector'])
+
+            date_selector.click()
+
+
         WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Input end'])))
 
         end = driver.find_element(By.XPATH, DATE_RANGE['Input end'])
@@ -641,7 +666,7 @@ def get_new_vs_returning():
 
         apply.click()
 
-        sleep(1.5)
+        sleep(1)
 
         WebDriverWait(driver, 70).until(EC.invisibility_of_element_located((By.XPATH, OTHERS['Loading'])))
 
@@ -649,14 +674,32 @@ def get_new_vs_returning():
 
         #SAVE INTO json:
 
-        new_users = re.sub(r'\(.*\)', '' , driver.find_element(By.XPATH, METRICS['New users']).text)
+        is_returning_users_first = 'Returning' in driver.find_element(By.XPATH, '/html/body/div[1]/div[2]/div/div[1]/div/div[4]/div[2]/div/div/div/div[2]/div/div[1]/div[3]/div/div[2]/div[3]/div[2]/div/table/tbody/tr[1]/td[3]').text
 
-        ret_users = re.sub(r'\(.*\)', '' , driver.find_element(By.XPATH, METRICS['Returning users']).text)
+
+        if is_returning_users_first:
+
+            new_users = re.sub(r'\(.*\)', '' , driver.find_element(By.XPATH, METRICS['Returning users']).text)
+            
+            ret_users = re.sub(r'\(.*\)', '' , driver.find_element(By.XPATH, METRICS['New users']).text)
+
+        else:
+
+            new_users = re.sub(r'\(.*\)', '' , driver.find_element(By.XPATH, METRICS['New users']).text)
+
+            ret_users = re.sub(r'\(.*\)', '' , driver.find_element(By.XPATH, METRICS['Returning users']).text)
+
+        
 
         new_vs_ret = {
-            'NewUsers' : new_users,
-            'ReturningUsers': ret_users
+            'Date' : start_date.strftime('%m/%d/%Y'),
+            'NewVisitors' : new_users,
+            'ReturningVisitors': ret_users
         }   
+
+        print('*' * 100 + f""" 
+        {new_vs_ret}
+        """ + '*' * 100)
 
         with open('new_vs_ret_data.json') as f:
 
@@ -667,7 +710,6 @@ def get_new_vs_returning():
             data['Data'].append(new_vs_ret)
             
             json.dump(data, f, indent=4)
-
 
         start_date += timedelta(days=1)
 
@@ -898,6 +940,77 @@ def save_log_ent():
         
         df.to_excel(f"log_ent.xlsx", index=True, columns=EXCEL_HEADS)
 
+
+def save_new_vs_ret():
+
+    with open('new_vs_ret_data.json') as f:
+
+        data = json.load(f)['Data']
+
+        print('Saving to excel...')
+
+        df = pd.DataFrame(data, index =pd.RangeIndex(0,len(data)),columns = ['NewUsers', 'ReturningUsers'])
+        
+        df.to_excel(f"new_vs_ret.xlsx", index=True, columns= ['NewUsers', 'ReturningUsers'])
+
+
+def clean_and_fix():
+
+    new_data = []
+
+    start_date = date(day=5,month=1,year=2009)
+    end_date = date(day=4,month=1,year=2023)
+
+    with open('new_vs_ret_data.json') as f:
+
+        data = json.load(f)['Data']
+
+        for row in data:
+
+            row['Date'] = start_date.strftime('%m/%d/%Y')
+
+            new_data.append(row)
+        
+            start_date += timedelta(days=1)
+
+            if start_date > end_date:
+
+                break
+
+            else:
+
+                pass
+        
+    with open('new_vs_ret_with_dates.json') as f:
+
+            data = json.load(f)
+
+    with open('new_vs_ret_with_dates.json', 'w') as f:
+
+        for row in new_data:
+
+            data['Data'].append(row)
+        
+        json.dump(data, f, indent=4)
+
+
+def find_outlayers():
+
+    with open('new_vs_ret_with_dates.json') as f:
+
+        data = json.load(f)['Data']
+
+        last_row = 0
+
+        for row in data:
+
+            if int(row['NewUsers'].replace(',','')) > last_row * 7 and last_row > 1000:
+
+                print(f'Outlayer: {row["Date"]}')
+
+            else:
+
+                last_row = int(row['NewUsers'].replace(',',''))        
 
 if __name__ == '__main__':
 

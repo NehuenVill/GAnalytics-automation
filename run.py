@@ -5,7 +5,7 @@ tu_contraseña = 'wrivyyyajqwjttrt'
 
 #ejecución del programa:
 
-get_metrics_data(tu_email, tu_contraseña)
+#get_metrics_data(tu_email, tu_contraseña)
 
 #Ejecución de la función manual:
 
@@ -19,7 +19,7 @@ Día_final = '2023-01-15'
 
 # Para agregar nuevas métricas:
 
-nueva_métrica = "EvolokEvents"              #Nombre de la métrica exactamente como aparace en la página de la API de GA.
+nueva_métrica = "metrica1"              #Nombre de la métrica exactamente como aparace en la página de la API de GA.
 
 tipo = "numero"                       # "texto" o "numero"
 

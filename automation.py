@@ -47,6 +47,7 @@ METRICS_LIST = [
                 'totalUsers',
                 'userEngagementDuration',
                 'wauPerMau',
+                'metrica1'
                 ]
 
 SPECIAL_METRICS = [                             #Metrics that require a dimension
@@ -102,7 +103,8 @@ EXCEL_HEADS = ['Date',
                 'wauPerMau',
                 'NewUsers',
                 'ReturningUsers',
-                'EvolokEvents'
+                'EvolokEvents',
+                'metrica1'
                 ]
 
 
@@ -127,13 +129,7 @@ def insert_to_db(f_data):
 
     try:
 
-        # cursor.execute(f"""INSERT INTO Analytics_data VALUES ('{str(f_data['Date'])}',{f_data['activeUsers']},{f_data['averageSessionDuration']},{f_data['bounceRate']},
-        # {f_data['crashFreeUsersRate']},{f_data['dauPerMau']},{f_data['dauPerWau']},{f_data['engagedSessions']},
-        # {f_data['engagementRate']}, {f_data['eventCount']}, {f_data['eventCountPerUser']}, {f_data['eventsPerSession']}, {f_data['newUsers']},
-        # {f_data['screenPageViews']}, {f_data['screenPageViewsPerSession']}, {f_data['sessions']}, {f_data['sessionsPerUser']},
-        # {f_data['totalUsers']}, {f_data['userEngagementDuration']}, {f_data['wauPerMau']})""")
-
-        cursor.execute(f"""INSERT INTO Analytics_historic_data VALUES ({insert_values.strip(',')})""")    
+        cursor.execute(f"""INSERT INTO Analytics_data VALUES ({insert_values.strip(',')})""")    
 
     except IntegrityError:
 
@@ -151,13 +147,13 @@ def update_db_columns(new_column, type):
 
     if type == 'numero':
 
-        cursor.execute(f"""ALTER TABLE Analytics_data_2 ADD {new_column} FLOAT""")    
+        cursor.execute(f"""ALTER TABLE Analytics_data ADD {new_column} FLOAT""")    
 
         print('Column was added succesfully')
 
     elif type == 'texto':
 
-        cursor.execute(f"""ALTER TABLE Analytics_data_2 ADD {new_column} VARCHAR(200)""")    
+        cursor.execute(f"""ALTER TABLE Analytics_data ADD {new_column} VARCHAR(200)""")    
 
         print('Column was added succesfully')
 
