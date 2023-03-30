@@ -564,7 +564,7 @@ def get_new_vs_returning():
 
     # Set up dates from 01/04/2009 to 01/03/2023:
 
-    start_date = date(day=30,month=10,year=2021)
+    start_date = date(day=30,month=6,year=2015)
     end_date = date(day=3,month=1,year=2023)
 
     # Automation:
@@ -698,8 +698,11 @@ def get_new_vs_returning():
         }   
 
         print('*' * 100 + f""" 
+        
         {new_vs_ret}
-        """ + '*' * 100)
+        
+        """ 
+        + '*' * 100)
 
         with open('new_vs_ret_data.json') as f:
 

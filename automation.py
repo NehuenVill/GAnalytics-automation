@@ -14,10 +14,7 @@ from google.analytics.data_v1beta import BetaAnalyticsDataClient
 from google.analytics.data_v1beta.types import (DateRange,
                                                 Metric,
                                                 Dimension,
-                                                RunReportRequest,
-                                                FilterExpression,
-                                                Filter
-                                                )
+                                                RunReportRequest)
 from google.api_core.exceptions import InvalidArgument
 import openpyxl
 import sqlite3
@@ -45,9 +42,13 @@ METRICS_LIST = [
                 'sessions',
                 'sessionsPerUser',
                 'totalUsers',
+                'newUsers',
                 'userEngagementDuration',
                 'wauPerMau',
-                'metrica1'
+                'EvolokEvents',
+                'Login',
+                'Entitlement',
+                'Login/Entitlement',
                 ]
 
 SPECIAL_METRICS = [                             #Metrics that require a dimension
@@ -99,12 +100,15 @@ EXCEL_HEADS = ['Date',
                 'sessions',
                 'sessionsPerUser',
                 'totalUsers',
+                'newUsers',
                 'userEngagementDuration',
                 'wauPerMau',
-                'NewUsers',
-                'ReturningUsers',
+                'NewVisitors',
+                'ReturningVisitors',
                 'EvolokEvents',
-                'metrica1'
+                'Login',
+                'Entitlement',
+                'Login/Entitlement',
                 ]
 
 
@@ -119,13 +123,19 @@ def insert_to_db(f_data):
 
     for value in EXCEL_HEADS:
 
-        if value == 'Date':
+        try:
 
-            insert_values += f"'{str(f_data[value])}',"
+            if value == 'Date':
 
-        else:
+                insert_values += f"'{str(f_data[value])}',"
 
-            insert_values += f'{f_data[value]},'
+            else:
+
+                insert_values += f'{f_data[value]},'
+
+        except Exception:
+
+            insert_values += 'Null,'
 
     try:
 
@@ -162,7 +172,7 @@ def update_db_columns(new_column, type):
         print('Incorrect type, unable to add new column')
 
 
-def get_data_manual(start_date, end_date, email, password):
+def get_data_manual(start_date, end_date, email, password, send:bool):
 
     start = date(year=int(start_date.split('-')[0]), month=int(start_date.split('-')[1]),day=int(start_date.split('-')[2]))
 
@@ -262,12 +272,12 @@ def get_data_manual(start_date, end_date, email, password):
 
                         returning = full_response.rows[1].metric_values[0].value
 
-                        data[day_num]['NewUsers'] = new
+                        data[day_num]['NewVisitors'] = new
 
-                        data[day_num]['ReturningUsers'] = returning
+                        data[day_num]['ReturningVisitors'] = returning
 
-                        print(f"Extracted metric: NewUsers = ---- value = {data[day_num]['NewUsers']}")
-                        print(f"Extracted metric: ReturningUsers ---- value = {data[day_num]['ReturningUsers']}")
+                        print(f"Extracted metric: NewVisitors = ---- value = {data[day_num]['NewVisitors']}")
+                        print(f"Extracted metric: ReturningVisitors ---- value = {data[day_num]['ReturningVisitors']}")
 
                     except IndexError:
 
@@ -313,13 +323,15 @@ def get_data_manual(start_date, end_date, email, password):
 
             break
 
-    save_to_excel(data, start_date, end_date)
+    if send:
 
-    send_mail(email, password, start_date, end_date)
+        save_to_excel(data, start_date, end_date)
+
+        send_mail(email, password, start_date, end_date)
 
     return data
 
-def get_metrics_data(email, password):
+def get_weekly_data(email, password):
 
     """
     Function to get data from the GA API.
@@ -330,12 +342,17 @@ def get_metrics_data(email, password):
     start = today - timedelta(days=8)
     end = today - timedelta(days=2)
 
-    data = get_data_manual(start.strftime('%Y-%m-%d'), end.strftime('%Y-%m-%d'), email, password)
+    data = get_data_manual(start.strftime('%Y-%m-%d'), end.strftime('%Y-%m-%d'), email, password, True)
+
+def get_daily_Data():
+
+    today = date.today()
+
+    data = get_data_manual(today.strftime('%Y-%m-%d'), today.strftime('%Y-%m-%d'), None, None, False)
 
     for row in data:
 
         insert_to_db(row)
-
 
 def save_to_excel(metrics_data, start_date, end_date):
 
