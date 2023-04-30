@@ -11,8 +11,8 @@ url = 'https://analytics.google.com/analytics/web/?authuser=2#/report-home/a6897
 op_files = {'Channel' : 'C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/Prensa_historico/channel_traffic_prensa',
             'Source' : 'C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/Prensa_historico/source_medium_traffic_prensa',
             'Page' : 'C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/Prensa_historico/page_traffic_prensa',
-            'Device' : '',
-            'Segmetation': '',
+            'Device' : ('Audience', 'Mobile', 'Overview'),
+            'Segmetation': (),
             }
 
 btns_sequence = {'Channel' : ('Acquisition', 'All Traffic', 'Channels'),
@@ -29,7 +29,7 @@ def run(*metrics):
 
         btns = btns_sequence[metric]
 
-        x = threading.Thread(target=get_historics_nv, args=(start_date, end_date, url, op_files[metric], btns[0], btns[1], btns[2]))
+        x = threading.Thread(target=get_historics_nv(), args=(start_date, end_date, url, tvd_file, btns[0], btns[1], btns[2],))
         x.start()
 
 

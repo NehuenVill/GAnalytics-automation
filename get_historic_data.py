@@ -1650,7 +1650,7 @@ def get_historics_nv( start_date : date,
 
     max_rows.click()
 
-    sleep(1)
+    sleep(90)
 
     data = []
 
