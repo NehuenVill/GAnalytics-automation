@@ -1,12 +1,9 @@
 import math
 from os import environ, remove
 import ssl
-from tkinter import E
-from numpy import full
 import pandas as pd
 import smtplib
 from datetime import date, timedelta
-from dateutil.relativedelta import relativedelta
 from os.path import basename
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
@@ -15,14 +12,13 @@ from google.analytics.data_v1beta.types import (DateRange,
                                                 Metric,
                                                 Dimension,
                                                 RunReportRequest)
-from google.api_core.exceptions import InvalidArgument
 import openpyxl
 import sqlite3
 from sqlite3 import IntegrityError
-from time import sleep
  
-property_id = '347990037'
 environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'Proyecto API-8b9749be5c38.json'
+
+property_id = '347990037'
 client = BetaAnalyticsDataClient()
 
 METRICS_LIST = [
@@ -45,10 +41,6 @@ METRICS_LIST = [
                 'newUsers',
                 'userEngagementDuration',
                 'wauPerMau',
-                'EvolokEvents',
-                'Login',
-                'Entitlement',
-                'Login/Entitlement',
                 ]
 
 SPECIAL_METRICS = [                             #Metrics that require a dimension
@@ -123,20 +115,27 @@ def insert_to_db(f_data):
 
     for value in EXCEL_HEADS:
 
-        try:
+            try:
 
-            if value == 'Date':
+                if f_data[value]:
 
-                insert_values += f"'{str(f_data[value])}',"
+                    if value == 'Date':
 
-            else:
+                        insert_values += f"'{str(f_data[value])}',"
 
-                insert_values += f'{f_data[value]},'
+                    else:
 
-        except Exception:
+                        insert_values += f'{f_data[value]},'
 
-            insert_values += 'Null,'
+                else:
 
+                    insert_values += 'Null,'
+
+            except Exception:
+
+                insert_values += 'Null,'
+
+    
     try:
 
         cursor.execute(f"""INSERT INTO Analytics_data VALUES ({insert_values.strip(',')})""")    
@@ -297,7 +296,11 @@ def get_data_manual(start_date, end_date, email, password, send:bool):
 
                     try:
 
-                        evolok = full_response.rows[7].metric_values[0].value
+                        for row in full_response.rows:
+
+                            if row.dimension_values[0].value == "EVOLOK":
+
+                                evolok = row.metric_values[0].value
 
                         data[day_num]['EvolokEvents'] = evolok
 
@@ -344,9 +347,9 @@ def get_weekly_data(email, password):
 
     data = get_data_manual(start.strftime('%Y-%m-%d'), end.strftime('%Y-%m-%d'), email, password, True)
 
-def get_daily_Data():
+def get_daily_data():
 
-    today = date.today()
+    today = date.today() - timedelta(days=1)
 
     data = get_data_manual(today.strftime('%Y-%m-%d'), today.strftime('%Y-%m-%d'), None, None, False)
 
@@ -403,9 +406,9 @@ def export_hist_data_to_db():
 
     workbook = openpyxl.load_workbook('Historico - GA3.xlsx', data_only=True)
 
-    worksheet = workbook['Históricos']
+    worksheet = workbook['BD Históricos']
 
-    for row in worksheet.iter_rows(min_row=2, max_row=5114):
+    for row in worksheet.iter_rows(min_row=5115, max_row=5211):
 
         data = {}
 
