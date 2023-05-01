@@ -7,12 +7,12 @@ from datetime import date
 
 start_date = date(day=1,month=1,year=2009)
 end_date = date(day=24,month=4,year=2023)
-url = 'https://analytics.google.com/analytics/web/?authuser=2#/report-home/a6897643w13263073p13942924'
+url = 'https://analytics.google.com/analytics/web/?authuser=2#/a6898250w13264172p13944111'
 
-file_number = {'Channel' : 0,
-            'Source' : 7,
-            'Page' : 8,
-            'Device' : 0,
+file_number = {'Channel' : 1,
+            'Source' : 1,
+            'Page' : 1,
+            'Device' : 1,
             'Segmetation': 1,
             }
 
@@ -44,4 +44,4 @@ def run(*metrics):
 
 if __name__ == "__main__":
 
-    run('Source', 'Page')
+    run('Device', 'Channel', 'Source')

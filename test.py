@@ -25,12 +25,6 @@ from openpyxl import load_workbook
 # ws.save('Prensa_historico/device_traffic_prensa.xlsx')
 
 
-data = [{'day':12, 'year':12, 'time':12},{'day':12, 'year':12},{'year':12, 'time':12}]
+jsonstr = '[{"hola":"dos", "tres":"4"}, {"hola":"dos", "tres":"4"}, {"hola":"dos", "tres":"4"}]' 
 
-df = pd.DataFrame(data, index =pd.RangeIndex(0,len(data)),columns = ['day', 'time', 'year'])
-    
-df.fillna('0',inplace=True)
-
-df.to_excel(f"new.xlsx", index=False, columns= ['day', 'time', 'year'])
-
-print('Saved!')
+json_obj = json.loads(jsonstr)

@@ -1517,7 +1517,8 @@ def get_traffic_by_channel(
 def get_historics_nv( start_date : date,
                     end_date : date,
                     url : str,
-                    op_file : str, 
+                    op_file : str,
+                    file_number : int, 
                     *btns):
 
     driver = start_driver(url)
@@ -1652,13 +1653,11 @@ def get_historics_nv( start_date : date,
 
     sleep(90)
 
-    data = []
+    data = '['
 
-    data_row = {}
+    data_row = '{'
 
     date = None
-
-    file_number = 1
 
     while True:
 
@@ -1679,39 +1678,47 @@ def get_historics_nv( start_date : date,
                 if date == elements[3].text:
 
                     date = elements[3].text
+
+                    cleaned_value = re.sub(r'\(.*\)', '' , elements[4].text)
+
+                    data_row += f'"{elements[2].text}":"{cleaned_value}",'
                     
-                    data_row[elements[2].text] = re.sub(r'\(.*\)', '' , elements[4].text)
+                    #data_row[elements[2].text] = re.sub(r'\(.*\)', '' , elements[4].text)
 
                 else:
 
-                    if len(data_row) > 0:
+                    if len(data_row) > 1:
 
-                        data.append(data_row)
-                        print(f'Retrieved record: {data_row}')
+                        data += data_row.strip(',') + '}, '
+                        print(f"\nRetrieved record: {data_row + '}'}")
 
-                    data_row = {}
+                    data_row = '{'
 
                     date = elements[3].text
 
                     f_date = f'{date[4:6]}/{date[6:8]}/{date[0:4]}'
 
-                    data_row['Date'] = f_date
+                    data_row += f'"Date":"{f_date}",'
 
-                    data_row[elements[2].text] = re.sub(r'\(.*\)', '' , elements[4].text)
+                    cleaned_value = re.sub(r'\(.*\)', '' , elements[4].text)
+
+                    data_row += f'"{elements[2].text}":"{cleaned_value}",'
+
+                    #data_row[elements[2].text] = re.sub(r'\(.*\)', '' , elements[4].text)
 
                 row_count += 1
 
             except IndexError:
 
-                with open(f'{op_file}({file_number}).json') as f:
-
-                    all_data = json.load(f)
-
                 with open(f'{op_file}({file_number}).json', 'w') as f:
 
-                    all_data['Data'].append(data)
+                    json_data = data.strip().strip(',') + ']'
+
+                    print(json_data)
+
+                    all_data = json.loads(json_data)
                     
-                    json.dump(data, f, indent=4)
+                    json.dump(all_data, f, indent=4)
 
                 # df = pd.DataFrame(data, columns=list(max(data, key=len).keys()))
 
@@ -1731,19 +1738,19 @@ def get_historics_nv( start_date : date,
 
                 # del values                 
 
-                # break
+                break
 
             if row_count > 4999:
 
-                with open(f'{op_file}({file_number}).json') as f:
-
-                    all_data = json.load(f)
-
                 with open(f'{op_file}({file_number}).json', 'w') as f:
 
-                    all_data['Data'].append(data)
+                    json_data = data.strip().strip(',') + ']'
+
+                    print(json_data)
+
+                    all_data = json.loads(json_data)
                     
-                    json.dump(data, f, indent=4)
+                    json.dump(all_data, f, indent=4)
 
                 file_number += 1
 
@@ -1759,7 +1766,7 @@ def get_historics_nv( start_date : date,
 
                 # wb.save(op_file)
 
-                data = []
+                data = '['
 
                 # del df
 
@@ -1785,13 +1792,15 @@ def save_historic_to_excel(op_file):
 
     all_data = []
 
+    data = []
+
     while True:
 
         try:
 
             with open(f'{op_file}({file_num}).json') as f:
 
-                data = json.load(f)['Data']
+                data = json.load(f)
 
                 for element in data:
 
@@ -1811,11 +1820,13 @@ def save_historic_to_excel(op_file):
 
                 file_num += 1
 
-        except Exception:
+        except Exception as e:
 
             break
 
-    df = pd.DataFrame(data, index =pd.RangeIndex(0,len(data)),columns = all_columns)
+    df = pd.DataFrame(all_data, index =pd.RangeIndex(0,len(all_data)),columns = all_columns)
+
+    df.fillna('0', inplace=True)
     
     df.to_excel(f"{op_file}.xlsx", index=False, columns= all_columns)
 
@@ -1937,4 +1948,6 @@ tvd_file = 'C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Ana
 
 if __name__ == '__main__':
 
-    get_historics_nv(start_date, end_date, url, tvd_file, 'Acquisition', 'All Traffic', 'Channels')
+    #get_historics_nv(start_date, end_date, url, tvd_file, 'Acquisition', 'All Traffic', 'Channels')
+
+    save_historic_to_excel('C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/Prensa_historico/channel_traffic_prensa')
