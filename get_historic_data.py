@@ -1,3 +1,4 @@
+from distutils.errors import LibError
 import json
 from msilib.schema import tables
 from select import select
@@ -87,6 +88,10 @@ DATE = {
 
 EXCEL_HEADS = ['Login', 'Entitlement', 'Login/Entitlement']
 
+
+PATTERNS = {
+    'item': r'[0-9]*\.\n',
+}
 
 def start_driver(url):
 
@@ -1514,7 +1519,7 @@ def get_traffic_by_channel(
 
             pass
 
-def get_historics_nv( start_date : date,
+def get_historics_faster( start_date : date,
                     end_date : date,
                     url : str,
                     op_file : str,
@@ -1653,6 +1658,169 @@ def get_historics_nv( start_date : date,
 
     sleep(90)
 
+    date = None
+
+    while True:
+
+        WebDriverWait(driver, 70).until(EC.invisibility_of_element_located((By.XPATH, OTHERS['Loading'])))
+
+        table = driver.find_element(By.XPATH, '/html/body/div[1]/div[2]/div/div[1]/div/div[4]/div[2]/div/div/div/div[2]/div/div[1]/div[3]/div/div[2]/div[3]/div[2]/div/table/tbody')
+
+
+        with open(f'{op_file}({file_number}).txt', 'w') as op:
+
+            op.write(table.text)
+
+        file_number += 1
+
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE['Pagination'])))
+
+        next = driver.find_element(By.XPATH, DATE['Pagination']) 
+
+        next.click()
+        
+        sleep(2)
+        
+
+def get_historics_nv( start_date : date,
+                    end_date : date,
+                    url : str,
+                    op_file : str,
+                    file_number : int, 
+                    *btns):
+
+    driver = start_driver(url)
+
+    for btn in btns:
+
+        if btn == 'Overview':
+
+            WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, f"//span[text()='{btn}']")))
+
+            button = driver.find_elements(By.XPATH, f"//span[text()='{btn}']")[1] 
+
+            button.click()
+
+        else:
+
+            WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, f"//span[text()='{btn}']")))
+
+            button = driver.find_element(By.XPATH, f"//span[text()='{btn}']") 
+
+            button.click()
+
+        sleep(1.5)
+
+    WebDriverWait(driver, 70).until(EC.invisibility_of_element_located((By.XPATH, OTHERS['Loading'])))
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.ID, 'galaxyIframe')))
+
+    iframe = driver.find_element(By.ID, 'galaxyIframe')
+
+    driver.switch_to.frame(iframe)
+
+    sleep(1.5)
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Date selector'])))
+
+    date_selector = driver.find_element(By.XPATH, DATE_RANGE['Date selector'])
+
+    date_selector.click()
+    
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Input end'])))
+
+    end = driver.find_element(By.XPATH, DATE_RANGE['Input end'])
+
+    sleep(0.5)
+
+    end.clear()
+
+    sleep(0.5)
+
+    end.send_keys(f'{end_date.month}/{end_date.day}/{end_date.year}')
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Input start'])))
+
+    start = driver.find_element(By.XPATH, DATE_RANGE['Input start'])
+
+    sleep(0.5)
+
+    start.clear()
+
+    sleep(0.5)
+
+    start.send_keys(f'{start_date.month}/{start_date.day}/{start_date.year}')
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE_RANGE['Apply'])))
+
+    apply = driver.find_element(By.XPATH, DATE_RANGE['Apply'])
+
+    sleep(1)
+
+    apply.click()
+
+    sleep(1.5)
+
+    WebDriverWait(driver, 70).until(EC.invisibility_of_element_located((By.XPATH, OTHERS['Loading'])))
+
+    sleep(1.5)
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE['DD btn'])))
+
+    dropdown = driver.find_element(By.XPATH, DATE['DD btn']) 
+
+    dropdown.click()
+
+    sleep(1.5)
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE['DD input'])))
+
+    input = driver.find_element(By.XPATH, DATE['DD input']) 
+
+    input.clear()
+
+    input.send_keys('Date')
+
+    sleep(1)
+
+    input.send_keys(Keys.ENTER)
+
+    sleep(1.5)
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE['Date'])))
+
+    date = driver.find_element(By.XPATH, DATE['Date']) 
+
+    date.click()
+
+    sleep(1.5)
+
+    WebDriverWait(driver, 70).until(EC.invisibility_of_element_located((By.XPATH, OTHERS['Loading'])))
+
+    date = driver.find_element(By.XPATH, DATE['Date']) 
+
+    date.click()
+
+    sleep(1.5)
+
+    WebDriverWait(driver, 70).until(EC.invisibility_of_element_located((By.XPATH, OTHERS['Loading'])))
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE['Select'])))
+
+    select = driver.find_element(By.XPATH, DATE['Select']) 
+
+    select.click()
+
+    sleep(1.5)
+
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE['Max rows'])))
+
+    max_rows = driver.find_element(By.XPATH, DATE['Max rows']) 
+
+    max_rows.click()
+
+    sleep(5)
+
     data = '['
 
     data_row = '{'
@@ -1784,6 +1952,88 @@ def get_historics_nv( start_date : date,
         
         sleep(1)
 
+def save_to_json(op_file:str, file_num:int):
+
+    data = []
+
+    while True:
+
+        try:
+
+            with open(f'{op_file}({file_num}).txt') as f:
+
+                key = None
+                value = None
+                date = None
+                row = {}
+
+                line_counter = 0
+
+                for line in f:
+
+                    if line_counter == 0:
+
+                        date = line.split(' ')[-1]
+
+                        f_date = f'{date[4:6]}/{date[6:8]}/{date[0:4]}'
+
+                        key = line.split('. ')[1].replace(date, '')
+
+                    elif line_counter == 1:
+
+                        value = re.sub(r'\(.*\)', '' , line)
+
+                        try:
+
+                            if f_date == row['Date']:
+
+                                row[key] = value
+                            
+                            else:
+
+                                if len(row) > 0:
+
+                                    data.append(row)
+                                    print(f'added row {row}')
+
+                                row = {}
+
+                                row['Date'] = f_date
+
+                                row[key] = value
+
+                        except KeyError:
+
+                            row['Date'] = f_date
+
+                            row[key] = value
+
+
+                    elif line_counter == 9:
+
+                        line_counter = 0
+
+                        continue
+
+                    else:
+
+                        pass
+
+                    line_counter += 1
+
+
+                with open(f'{op_file}({file_num}).json', 'w') as file:
+
+                    json.dump(data, file, indent=4)
+
+                file_num += 1
+
+        except Exception as e:
+
+            print(e.with_traceback())
+
+            break
+
 def save_historic_to_excel(op_file):
 
     file_num = 1
@@ -1821,6 +2071,8 @@ def save_historic_to_excel(op_file):
                 file_num += 1
 
         except Exception as e:
+
+
 
             break
 
@@ -1950,4 +2202,6 @@ if __name__ == '__main__':
 
     #get_historics_nv(start_date, end_date, url, tvd_file, 'Acquisition', 'All Traffic', 'Channels')
 
-    save_historic_to_excel('C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/Prensa_historico/channel_traffic_prensa')
+    save_historic_to_excel('C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/Prensa_historico/source_medium_traffic_prensa')
+
+    #save_to_json('C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/Prensa_historico/source_medium_traffic_prensa', 9)

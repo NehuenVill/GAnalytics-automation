@@ -16,10 +16,10 @@ file_number = {'Channel' : 1,
             'Segmetation': 1,
             }
 
-op_files = {'Channel' : 'C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/Prensa_historico/channel_traffic_prensa',
-            'Source' : 'C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/Prensa_historico/source_medium_traffic_prensa',
-            'Page' : 'C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/Prensa_historico/page_traffic_prensa',
-            'Device' : '',
+op_files = {'Channel' : 'C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/ellas_historico/channel_traffic_ellas',
+            'Source' : 'C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/ellas_historico/source_medium_traffic_ellas',
+            'Page' : 'C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/ellas_historico/page_traffic_ellas',
+            'Device' : 'C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/ellas_historico/device_traffic_ellas',
             'Segmetation': '',
             }
 
@@ -40,7 +40,7 @@ def run(*metrics):
         x = threading.Thread(target=get_historics_nv, args=(start_date, end_date, url, op_files[metric], file_number[metric], btns[0], btns[1], btns[2]))
         x.start()
 
-        sleep(5)
+        sleep(60)
 
 if __name__ == "__main__":
 
