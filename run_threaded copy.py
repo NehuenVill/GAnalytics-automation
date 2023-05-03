@@ -1,5 +1,5 @@
 from time import sleep
-from get_historic_data import get_historics_nv
+from get_historic_data import get_historics_faster, get_historics_nv
 import threading
 from datetime import date
 
@@ -9,10 +9,10 @@ start_date = date(day=1,month=1,year=2009)
 end_date = date(day=24,month=4,year=2023)
 url = 'https://analytics.google.com/analytics/web/?authuser=2#/a6898250w13264172p13944111'
 
-file_number = {'Channel' : 1,
-            'Source' : 1,
-            'Page' : 1,
-            'Device' : 1,
+file_number = {'Channel' : 3,
+            'Source' : 13,
+            'Page' : 27,
+            'Device' : 0,
             'Segmetation': 1,
             }
 
@@ -37,11 +37,8 @@ def run(*metrics):
 
         btns = btns_sequence[metric]
 
-        x = threading.Thread(target=get_historics_nv, args=(start_date, end_date, url, op_files[metric], file_number[metric], btns[0], btns[1], btns[2]))
-        x.start()
-
-        sleep(60)
+        get_historics_faster(start_date, end_date, url, op_files[metric], file_number[metric], btns[0], btns[1], btns[2])
 
 if __name__ == "__main__":
 
-    run('Device', 'Channel', 'Source')
+    run('Page','Source')

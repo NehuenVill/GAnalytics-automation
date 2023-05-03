@@ -1664,23 +1664,36 @@ def get_historics_faster( start_date : date,
 
         WebDriverWait(driver, 70).until(EC.invisibility_of_element_located((By.XPATH, OTHERS['Loading'])))
 
-        table = driver.find_element(By.XPATH, '/html/body/div[1]/div[2]/div/div[1]/div/div[4]/div[2]/div/div/div/div[2]/div/div[1]/div[3]/div/div[2]/div[3]/div[2]/div/table/tbody')
+        try: 
 
+            table = driver.find_element(By.XPATH, '/html/body/div[1]/div[2]/div/div[1]/div/div[4]/div[2]/div/div/div/div[2]/div/div[1]/div[3]/div/div[2]/div[3]/div[2]/div/table/tbody')
 
-        with open(f'{op_file}({file_number}).txt', 'w') as op:
+            with open(f'{op_file}({file_number}).txt', 'w') as op:
 
-            op.write(table.text)
+                op.write(table.text)
 
-        file_number += 1
+        except Exception as e:
 
-        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, DATE['Pagination'])))
+            print(e.args)
 
-        next = driver.find_element(By.XPATH, DATE['Pagination']) 
-
-        next.click()
+            print(f'Problem with records {file_number*5000 + 1} to {file_number*5000 + 5000}')
         
-        sleep(2)
-        
+        finally:
+
+            file_number += 1
+
+            sleep(2)
+
+            WebDriverWait(driver, 70).until(EC.presence_of_element_located((By.XPATH, DATE['Pagination'])))
+
+            next = driver.find_element(By.XPATH, DATE['Pagination']) 
+
+            next.click()
+            
+            sleep(2)
+
+    
+
 
 def get_historics_nv( start_date : date,
                     end_date : date,
@@ -1954,9 +1967,10 @@ def get_historics_nv( start_date : date,
 
 def save_to_json(op_file:str, file_num:int):
 
-    data = []
 
     while True:
+
+        data = []
 
         try:
 
@@ -1987,7 +2001,91 @@ def save_to_json(op_file:str, file_num:int):
 
                             if f_date == row['Date']:
 
-                                row[key] = value
+                                row[key.replace('\n', '')] = value.replace('\n', '')
+                            
+                            else:
+
+                                if len(row) > 0:
+
+                                    data.append(row)
+                                    print(f'added row {row}')
+
+                                row = {}
+
+                                row['Date'] = f_date.replace('\n', '')
+
+                                row[key.replace('\n', '')] = value.replace('\n', '')
+
+                        except KeyError:
+
+                            row['Date'] = f_date
+
+                            row[key] = value
+
+
+                    elif line_counter == 9:
+
+                        line_counter = 0
+
+                        continue
+
+                    else:
+
+                        pass
+
+                    line_counter += 1
+
+
+                with open(f'{op_file}({file_num}).json', 'w') as file:
+
+                    json.dump(data, file, indent=4)
+
+                file_num += 1
+
+        except Exception as e:
+
+            print(e.with_traceback())
+
+            break
+
+def save_to_json_2(op_file:str, file_num:int):
+
+    while True:
+
+        data = []
+
+        try:
+
+            with open(f'{op_file}({file_num}).txt') as f:
+
+                key = None
+                value = None
+                date = None
+                row = {}
+
+                line_counter = 0
+
+                for line in f:
+
+                    if line_counter == 1:
+
+                        key = line.replace('\n', '')
+
+                    elif line_counter == 2:
+
+                        date = line
+
+                        f_date = f'{date[4:6]}/{date[6:8]}/{date[0:4]}'
+
+                    elif line_counter == 3:
+
+                        value = re.sub(r'\(.*\)', '' , line)
+
+                        try:
+
+                            if f_date == row['Date']:
+
+                                row[key] = value.replace('\n', '')
                             
                             else:
 
@@ -2000,14 +2098,13 @@ def save_to_json(op_file:str, file_num:int):
 
                                 row['Date'] = f_date
 
-                                row[key] = value
+                                row[key] = value.replace('\n', '')
 
                         except KeyError:
 
                             row['Date'] = f_date
 
-                            row[key] = value
-
+                            row[key] = value.replace('\n', '')
 
                     elif line_counter == 9:
 
@@ -2205,3 +2302,4 @@ if __name__ == '__main__':
     save_historic_to_excel('C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/Prensa_historico/source_medium_traffic_prensa')
 
     #save_to_json('C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/Prensa_historico/source_medium_traffic_prensa', 9)
+
