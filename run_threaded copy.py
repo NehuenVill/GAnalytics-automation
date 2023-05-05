@@ -7,19 +7,19 @@ from datetime import date
 
 start_date = date(day=1,month=1,year=2009)
 end_date = date(day=24,month=4,year=2023)
-url = 'https://analytics.google.com/analytics/web/?authuser=2#/a6898250w13264172p13944111'
+url = 'https://analytics.google.com/analytics/web/?authuser=2#/a6897643w13263073p13942924'
 
 file_number = {'Channel' : 3,
-            'Source' : 13,
-            'Page' : 27,
+            'Source' : 16,
+            'Page' : 72,
             'Device' : 0,
             'Segmetation': 1,
             }
 
-op_files = {'Channel' : 'C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/ellas_historico/channel_traffic_ellas',
-            'Source' : 'C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/ellas_historico/source_medium_traffic_ellas',
-            'Page' : 'C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/ellas_historico/page_traffic_ellas',
-            'Device' : 'C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/ellas_historico/device_traffic_ellas',
+op_files = {'Channel' : 'C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/prensa_historico/channel_traffic_prensa',
+            'Source' : 'C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/prensa_historico/source_medium_traffic_prensa',
+            'Page' : 'C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/prensa_historico/page_traffic_prensa',
+            'Device' : 'C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/prensa_historico/device_traffic_prensa',
             'Segmetation': '',
             }
 
@@ -41,4 +41,4 @@ def run(*metrics):
 
 if __name__ == "__main__":
 
-    run('Page','Source')
+    run('Page')

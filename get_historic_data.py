@@ -1656,7 +1656,7 @@ def get_historics_faster( start_date : date,
 
     max_rows.click()
 
-    sleep(90)
+    sleep(80)
 
     date = None
 
@@ -1668,16 +1668,20 @@ def get_historics_faster( start_date : date,
 
             table = driver.find_element(By.XPATH, '/html/body/div[1]/div[2]/div/div[1]/div/div[4]/div[2]/div/div/div/div[2]/div/div[1]/div[3]/div/div[2]/div[3]/div[2]/div/table/tbody')
 
-            with open(f'{op_file}({file_number}).txt', 'w') as op:
+            with open(f'{op_file}({file_number}).txt', 'w', encoding='utf-16') as op:
 
-                op.write(table.text)
+                op.write(table.text.encode('utf-16', 'replace').decode('utf-16', 'replace'))
 
         except Exception as e:
+
+            print(e.with_traceback())
 
             print(e.args)
 
             print(f'Problem with records {file_number*5000 + 1} to {file_number*5000 + 5000}')
         
+            break
+
         finally:
 
             file_number += 1
@@ -1974,7 +1978,7 @@ def save_to_json(op_file:str, file_num:int):
 
         try:
 
-            with open(f'{op_file}({file_num}).txt') as f:
+            with open(f'{op_file}({file_num}).txt', encoding='utf-16') as f:
 
                 key = None
                 value = None
@@ -2036,7 +2040,7 @@ def save_to_json(op_file:str, file_num:int):
                     line_counter += 1
 
 
-                with open(f'{op_file}({file_num}).json', 'w') as file:
+                with open(f'{op_file}({file_num}).json', 'w', encoding='utf-16') as file:
 
                     json.dump(data, file, indent=4)
 
@@ -2056,7 +2060,7 @@ def save_to_json_2(op_file:str, file_num:int):
 
         try:
 
-            with open(f'{op_file}({file_num}).txt') as f:
+            with open(f'{op_file}({file_num}).txt', encoding='utf-16') as f:
 
                 key = None
                 value = None
@@ -2119,7 +2123,7 @@ def save_to_json_2(op_file:str, file_num:int):
                     line_counter += 1
 
 
-                with open(f'{op_file}({file_num}).json', 'w') as file:
+                with open(f'{op_file}({file_num}).json', 'w', encoding='utf-16') as file:
 
                     json.dump(data, file, indent=4)
 
@@ -2127,19 +2131,23 @@ def save_to_json_2(op_file:str, file_num:int):
 
         except Exception as e:
 
-            print(e.with_traceback())
+            print(e.with_traceback(None))
 
             break
 
 def save_historic_to_excel(op_file):
 
-    file_num = 1
+    file_num = 21
 
     all_columns = []
 
     all_data = []
 
     data = []
+
+    file_counter = 1
+
+    op_file_num = 3
 
     while True:
 
@@ -2148,6 +2156,14 @@ def save_historic_to_excel(op_file):
             with open(f'{op_file}({file_num}).json') as f:
 
                 data = json.load(f)
+
+                print(f'{file_num} all good!')
+
+                if len(data) == 0:
+
+                    print(f'There is a problem with the {file_num} file.')
+
+                    break
 
                 for element in data:
 
@@ -2165,21 +2181,97 @@ def save_historic_to_excel(op_file):
 
                             continue
 
+                if file_counter == 8:
+
+                    df = pd.DataFrame(all_data, index =pd.RangeIndex(0,len(all_data)),columns = all_columns)
+
+                    df.fillna('0', inplace=True)
+                    
+                    df.to_csv(f"{op_file}({op_file_num}).csv", index=False, columns= all_columns)
+
+                    print('Saved!\n')
+
+                    file_counter = 0
+
+                    op_file_num += 1
+
+                    all_data = []
+
+                    break
+
                 file_num += 1
+                file_counter += 1
 
         except Exception as e:
 
+            with open(f'{op_file}({file_num}).json', encoding = 'utf-16') as f:
 
+                data = json.load(f)
 
-            break
+                print(f'{file_num} all good! (but utf-16)')
 
-    df = pd.DataFrame(all_data, index =pd.RangeIndex(0,len(all_data)),columns = all_columns)
+                if len(data) == 0:
 
-    df.fillna('0', inplace=True)
-    
-    df.to_excel(f"{op_file}.xlsx", index=False, columns= all_columns)
+                    print(f'There is a problem with the {file_num} file.')
 
-    print('Saved!')
+                    break
+
+                for element in data:
+
+                    all_data.append(element)
+
+                    keys = element.keys()
+
+                    for key in keys:
+
+                        if key not in all_columns:
+
+                            all_columns.append(key)
+
+                        else:
+
+                            continue
+
+                if file_counter == 8:
+
+                    df = pd.DataFrame(all_data, index =pd.RangeIndex(0,len(all_data)),columns = all_columns)
+
+                    df.fillna('0', inplace=True)
+                    
+                    df.to_csv(f"{op_file}({op_file_num}).csv", index=False, columns= all_columns)
+
+                    print('Saved!\n')
+
+                    file_counter = 0
+
+                    op_file_num += 1
+
+                    all_data = []
+
+                    break
+
+                file_num += 1
+                file_counter += 1
+
+            # print(f'There is a problem with the {file_num} file.')
+
+            # df = pd.DataFrame(all_data, index =pd.RangeIndex(0,len(all_data)),columns = all_columns)
+
+            # df.fillna('0', inplace=True)
+            
+            # df.to_csv(f"{op_file}({op_file_num}).csv", index=False, columns= all_columns)
+
+            # print('Saved!')
+
+            # file_counter = 0
+
+            # op_file_num += 1
+
+            # all_data = []
+
+            # print(e.with_traceback(None))
+
+            # break
 
 
 
@@ -2222,7 +2314,7 @@ def clean_and_fix():
     start_date = date(day=5,month=1,year=2009)
     end_date = date(day=4,month=1,year=2023)
 
-    with open('new_vs_ret_data.json') as f:
+    with open('new_vs_ret_data.json', encoding='utf-16') as f:
 
         data = json.load(f)['Data']
 
@@ -2299,7 +2391,9 @@ if __name__ == '__main__':
 
     #get_historics_nv(start_date, end_date, url, tvd_file, 'Acquisition', 'All Traffic', 'Channels')
 
-    save_historic_to_excel('C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/Prensa_historico/source_medium_traffic_prensa')
+    #save_historic_to_excel('C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/prensa_historico/page_traffic_prensa')
 
-    #save_to_json('C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/Prensa_historico/source_medium_traffic_prensa', 9)
+    save_historic_to_excel('C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/ellas_historico/source_medium_traffic_ellas')
+
+    #save_to_json('C:/Users/nehue/Documents/programas_de_python/Upwork_tasks/Google_Analytics_automation/midiario_historico/source_medium_traffic_midiario', 1)
 
